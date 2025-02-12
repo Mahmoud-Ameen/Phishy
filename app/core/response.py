@@ -10,6 +10,6 @@ class ApiResponse:
         return jsonify(response), 200
 
     @staticmethod
-    def error(message="An error occurred", status_code=400):
-        response = {"status": "error", "message": message}
+    def error(message="An error occurred", status_code=400, details=None):
+        response = {"status": "error", "message": message, "details": details}
         return jsonify(response), status_code

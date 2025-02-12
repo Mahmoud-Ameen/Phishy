@@ -16,7 +16,7 @@ def register_error_handlers(app):
     def handle_app_exception(error):
         """Handle custom application exceptions"""
         logger.error(f"AppException: {error.message}")
-        return ApiResponse.error(error.message, error.status_code)
+        return ApiResponse.error(error.message, error.status_code, error.details)
 
     @app.errorhandler(404)
     def handle_not_found(error=None):
