@@ -1,16 +1,33 @@
 class AppException(Exception):
-    def __init__(self, message, status_code=400, details=None):
+    """ Base class for all custom exceptions """
+    def __init__(self, message, details=None):
         super().__init__(message)
         self.message = message
-        self.status_code = status_code
         self.details = details
 
+    def to_dict(self):
+        return {
+            "message": self.message,
+            "details": self.details
+        }
 
-class NotFoundException(AppException):
-    def __init__(self, message="Resource not found"):
-        super().__init__(message, 404)
+
+# region Business Exceptions
+class BusinessException(AppException):
+    pass
 
 
-class UnauthorizedException(AppException):
-    def __init__(self, message="Unauthorized"):
-        super().__init__(message, 401)
+class InvalidCredentials(BusinessException):
+    pass
+
+
+class UserAlreadyExists(BusinessException):
+    pass
+
+# endregion
+
+# region Repository Exceptions
+class RepositoryException(AppException):
+    pass
+
+# endregion

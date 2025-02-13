@@ -1,46 +1,40 @@
 # libraries
 import logging
-from flask_jwt_extended.exceptions import NoAuthorizationError
-from jwt import ExpiredSignatureError
-from werkzeug.exceptions import HTTPException
+from flask_jwt_extended import JWTManager
 
 # application specific
-from app.core.exceptions import AppException
 from app.core.response import ApiResponse
 
 logger = logging.getLogger(__name__)
 
 
 def register_error_handlers(app):
-    @app.errorhandler(AppException)
-    def handle_app_exception(error):
-        """Handle custom application exceptions"""
-        logger.error(f"AppException: {error.message}")
-        return ApiResponse.error(error.message, error.status_code, error.details)
-
-    @app.errorhandler(404)
-    def handle_not_found(error=None):
-        """Handle 404 errors"""
-        logger.error("Resource not found")
-        return ApiResponse.error("Resource not found", 404)
-
-    @app.errorhandler(NoAuthorizationError)
-    def handle_no_authorization_error(e):
-        """Handle missing or invalid authentication token"""
-        logger.error("Missing or invalid authentication token")
-        return ApiResponse.error("Missing or invalid authentication token", 401)
-
-    @app.errorhandler(ExpiredSignatureError)
-    def handle_expired_token_error(e):
-        """Handle expired token"""
-        logger.error("Token has expired")
-        return ApiResponse.error("Token has expired", 401)
 
     @app.errorhandler(Exception)
     def handle_generic_exception(e):
-        """Handle generic exceptions"""
-        if isinstance(e, HTTPException):
-            logger.error(f"HTTPException: {e.description}")
-            return ApiResponse.error(e.description, e.code)
-        logger.error("An unexpected error occurred")
+        logger.error(f"Unexpected error: {e}")
         return ApiResponse.error("An unexpected error occurred", 500)
+
+    # region JWT Error Handlers
+    # Force Flask-JWT-Extended to use our custom error handling
+    jwt = JWTManager(app)
+
+    @jwt.unauthorized_loader
+    def custom_unauthorized_response(err_msg):
+        """Handles missing token errors (NoAuthorizationError)"""
+        logger.error(f"JWT Unauthorized: {err_msg}")
+        return ApiResponse.error(err_msg, 401)
+
+    @jwt.expired_token_loader
+    def custom_expired_token_response(jwt_header, jwt_payload):
+        """Handles expired token errors"""
+        logger.error("JWT Token has expired")
+        return ApiResponse.error("Token has expired", 401)
+
+    @jwt.invalid_token_loader
+    def custom_invalid_token_response(err_msg):
+        """Handles invalid token errors"""
+        logger.error(f"JWT Invalid Token: {err_msg}")
+        return ApiResponse.error("Invalid authentication token", 401)
+    # endregion
+
