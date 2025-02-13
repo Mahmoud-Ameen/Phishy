@@ -12,5 +12,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///database.db')
 
     # JWT Related
+    JWT_TOKEN_LOCATION = ['headers']
+    JWT_HEADER_NAME = 'Authorization'
+    JWT_HEADER_TYPE = 'Bearer'
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "Mahmoud")
     JWT_ACCESS_TOKEN_EXPIRES = 60 * 60 * 24  # 1 day
