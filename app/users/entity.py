@@ -1,8 +1,6 @@
 import enum
 from dataclasses import dataclass
 
-from werkzeug.security import generate_password_hash, check_password_hash
-
 
 class UserRole(enum.Enum):
     ADMIN = "admin"
