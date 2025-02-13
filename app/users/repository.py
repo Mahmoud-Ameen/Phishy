@@ -1,21 +1,56 @@
 from typing import Any
 
-# app specific
-from .models import User
+from sqlalchemy.exc import IntegrityError
+
+from .entity import UserEntity
+from .models import UserModel
+from ..core.exceptions import UserAlreadyExists
 from ..extensions import db
 
 
 class UserRepository:
     @staticmethod
-    def create(email: str, role: str, first_name: str, last_name: str, password: str) -> dict[str, Any]:
-        user = User(email=email, role=role, first_name=first_name, last_name=last_name)
-        user.set_password(password)
-
-        db.session.add(user)
-        db.session.commit()
-        return user.to_dict()
+    def model_to_entity(user_model: UserModel) -> UserEntity:
+        print("user role ", user_model.role)
+        return UserEntity(
+            email=user_model.email,
+            role=user_model.role.value,
+            first_name=user_model.first_name,
+            last_name=user_model.last_name,
+            password_hash=user_model.password
+        )
 
     @staticmethod
-    def get_by_email(email: str) -> dict[str, Any]:
-        return User.query.filter_by(email=email).first()
-    
+    def entity_to_model(user_entity: UserEntity) -> UserEntity:
+        user_model = UserModel(
+            email=user_entity.email,
+            role=user_entity.role.value,
+            first_name=user_entity.first_name,
+            last_name=user_entity.last_name,
+            password=user_entity.password_hash
+        )
+        return user_model
+
+    @staticmethod
+    def create(user: UserEntity) -> UserEntity:
+
+        user_model = UserRepository.entity_to_model(user)
+
+        try:
+            db.session.add(user_model)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            raise UserAlreadyExists("User already exists")
+
+        return user
+
+    @staticmethod
+    def get_by_email(email: str) -> UserEntity | None:
+        print("ol")
+        user_model = UserModel.query.filter_by(email=email).first()
+
+        if not user_model:
+            return None
+
+        return UserRepository.model_to_entity(user_model)
