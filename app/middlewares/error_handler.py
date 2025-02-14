@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 def register_error_handlers(app):
 
+    @app.errorhandler(404)
+    def handle_not_found_error(e):
+        logger.error(f"Resource not found: {e}")
+        return ApiResponse.error("Resource not found", 404)
+
     @app.errorhandler(Exception)
     def handle_generic_exception(e):
         logger.error(f"Unexpected error: {e}")
