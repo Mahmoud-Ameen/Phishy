@@ -21,7 +21,7 @@ class UserRepository:
         )
 
     @staticmethod
-    def entity_to_model(user_entity: UserEntity) -> UserEntity:
+    def entity_to_model(user_entity: UserEntity) -> UserModel:
         user_model = UserModel(
             email=user_entity.email,
             role=user_entity.role.value,
