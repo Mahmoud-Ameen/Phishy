@@ -16,8 +16,8 @@ def register_error_handlers(app):
         return ApiResponse.error("Resource not found", 404)
 
     @app.errorhandler(Exception)
-    def handle_generic_exception(e):
-        logger.error(f"Unexpected error: {e}")
+    def handle_generic_exception(e: Exception):
+        logger.error(f"Unexpected error: {e}", e.__traceback__)
         return ApiResponse.error("An unexpected error occurred", 500)
 
     # region JWT Error Handlers

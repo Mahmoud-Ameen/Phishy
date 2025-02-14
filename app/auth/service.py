@@ -27,5 +27,6 @@ class AuthService:
             raise InvalidCredentials("Invalid email or password")
 
         # generate jwt token
-        token = create_access_token(identity=user)
+        token = create_access_token(identity=user.email,
+                                    additional_claims={"role": user.role, "email": user.email})
         return token
