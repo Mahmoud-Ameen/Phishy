@@ -1,6 +1,5 @@
 # libraries
 import enum
-
 from sqlalchemy.orm import Mapped
 
 # app specific
