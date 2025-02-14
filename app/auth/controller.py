@@ -18,7 +18,7 @@ class AuthController:
 
             # Call the service to log the user in
             token = AuthService.login(data["email"], data["password"])
-            return ApiResponse.success(message="Login successful", data=token)
+            return ApiResponse.success(message="Login successful", data={"access_token":token})
 
         # Handle invalid json
         except (BadRequest, UnsupportedMediaType):
