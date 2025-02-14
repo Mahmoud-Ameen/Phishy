@@ -13,21 +13,23 @@ class AppException(Exception):
 
 
 # region Business Exceptions
-class BusinessException(AppException):
+
+class InvalidCredentials(AppException):
     pass
 
 
-class InvalidCredentials(BusinessException):
+class UserAlreadyExists(AppException):
     pass
 
 
-class UserAlreadyExists(BusinessException):
+class EmployeeAlreadyExists(AppException):
     pass
 
-# endregion
 
-# region Repository Exceptions
-class RepositoryException(AppException):
+class DepartmentDoesntExist(AppException):
+    pass
+
+class DepartmentAlreadyExists(AppException):
     pass
 
 # endregion

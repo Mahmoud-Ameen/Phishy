@@ -20,6 +20,9 @@ def create_app(config_class=Config):
     app.register_blueprint(users_bp)
     from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
+    from app.employees.routes import employees_bp, departments_bp
+    app.register_blueprint(employees_bp)
+    app.register_blueprint(departments_bp)
 
     with app.app_context():
         db.create_all()
