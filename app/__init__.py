@@ -24,6 +24,9 @@ def create_app(config_class=Config):
     app.register_blueprint(employees_bp)
     app.register_blueprint(departments_bp)
 
+    from app.phishing.templates.routes import templates_bp
+    app.register_blueprint(templates_bp)
+
     with app.app_context():
         db.create_all()
 
