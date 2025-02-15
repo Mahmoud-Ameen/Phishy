@@ -5,8 +5,8 @@ from datetime import datetime
 class CampaignModel(db.Model):
     __tablename__ = "campaigns"
     id: int = db.Column(db.Integer, primary_key=True)
-    start_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
     name: str = db.Column(db.String(255), nullable=False)
+    start_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
     started_by: str = db.Column(db.String, db.ForeignKey('users.email'), nullable=False)
     # phishing_emails: Mapped["PhishingEmail"] = db.relationship("PhishingEmail", backref="campaign", lazy=True)
 

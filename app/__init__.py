@@ -15,17 +15,25 @@ def create_app(config_class=Config):
     jwt.init_app(app)
     register_error_handlers(app)
 
-    # Register blueprints
+    # Register user blueprints
     from app.company.users.routes import users_bp
     app.register_blueprint(users_bp)
+    # Register auth blueprint
     from app.company.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
+
+    # Register employees and departments blueprints
     from app.company.employees.routes import employees_bp, departments_bp
     app.register_blueprint(employees_bp)
     app.register_blueprint(departments_bp)
 
+    # Register templates blueprints
     from app.phishing.templates.routes import templates_bp
     app.register_blueprint(templates_bp)
+
+    # Register campaigns blueprints
+    from app.company.campaigns.routes import campaigns_bp
+    app.register_blueprint(campaigns_bp)
 
     with app.app_context():
         db.create_all()
