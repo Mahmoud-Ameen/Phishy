@@ -1,7 +1,7 @@
 from flask_jwt_extended import jwt_required
 
 # app specific
-from app.middlewares.auth import admin_required
+from app.core.middlewares.auth import admin_required
 from app.core.response import ApiResponse
 from .service import CampaignService
 
@@ -16,10 +16,8 @@ class CampaignsController:
     @staticmethod
     @admin_required
     def start_campaign():
-        try:
-            campaign = CampaignService.start_campaign()
-            return ApiResponse.success(
-                {"campaign": campaign},
-                "Campaign started successfully"
-           )
-        except
+        campaign = CampaignService.start_campaign()
+        return ApiResponse.success(
+            {"campaign": campaign},
+            "Campaign started successfully"
+        )

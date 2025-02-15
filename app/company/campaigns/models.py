@@ -1,4 +1,4 @@
-from ...extensions import db
+from app.extensions import db
 from datetime import datetime
 
 
@@ -7,7 +7,7 @@ class CampaignModel(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     start_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
     name: str = db.Column(db.String(255), nullable=False)
-    started_by: str = db.Column(db.String(255), nullable=False)
+    started_by: int = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     # phishing_emails: Mapped["PhishingEmail"] = db.relationship("PhishingEmail", backref="campaign", lazy=True)
 
     def to_dict(self):
