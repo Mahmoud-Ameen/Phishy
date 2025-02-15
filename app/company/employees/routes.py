@@ -1,5 +1,5 @@
 from flask.blueprints import Blueprint
-from app.employees.controller import EmployeesController, DepartmentsController
+from app.company.employees.controller import EmployeesController, DepartmentsController
 
 employees_bp = Blueprint('employees', __name__, url_prefix='/api/employees')
 

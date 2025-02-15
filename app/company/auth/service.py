@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token
 
 # app specific
 from app.core.exceptions import InvalidCredentials
-from app.users.repository import UserRepository
+from app.company.users.repository import UserRepository
 
 
 class AuthService:

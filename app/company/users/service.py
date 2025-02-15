@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 # app specific
 from .entity import UserEntity, UserRole
 from .repository import UserRepository
-from ..core.exceptions import UserAlreadyExists
+from app.core.exceptions import UserAlreadyExists
 
 
 class UserService:

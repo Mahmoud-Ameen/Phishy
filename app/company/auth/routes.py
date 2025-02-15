@@ -1,6 +1,6 @@
 from flask.blueprints import Blueprint
 
-from app.auth.controller import AuthController
+from app.company.auth.controller import AuthController
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 

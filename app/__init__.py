@@ -16,11 +16,11 @@ def create_app(config_class=Config):
     register_error_handlers(app)
 
     # Register blueprints
-    from app.users.routes import users_bp
+    from app.company.users.routes import users_bp
     app.register_blueprint(users_bp)
-    from app.auth.routes import auth_bp
+    from app.company.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
-    from app.employees.routes import employees_bp, departments_bp
+    from app.company.employees.routes import employees_bp, departments_bp
     app.register_blueprint(employees_bp)
     app.register_blueprint(departments_bp)
 

@@ -1,5 +1,5 @@
 import enum
-from ..extensions import db
+from app.extensions import db
 
 
 class DepartmentModel(db.Model):

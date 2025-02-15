@@ -4,8 +4,8 @@ from sqlalchemy.exc import IntegrityError
 
 from .entity import UserEntity
 from .models import UserModel
-from ..core.exceptions import UserAlreadyExists
-from ..extensions import db
+from app.core.exceptions import UserAlreadyExists
+from app.extensions import db
 
 
 class UserRepository:

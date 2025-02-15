@@ -4,9 +4,9 @@ from marshmallow import ValidationError
 from .entity import UserRole
 # app specific
 from .service import UserService
-from ..core.exceptions import UserAlreadyExists
-from ..middlewares.auth import admin_required
-from ..core.response import ApiResponse
+from app.core.exceptions import UserAlreadyExists
+from app.middlewares.auth import admin_required
+from app.core.response import ApiResponse
 from .schemas import UserRegisterSchema, UserResponseSchema
 
 

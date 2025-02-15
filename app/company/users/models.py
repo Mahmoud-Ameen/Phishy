@@ -3,7 +3,7 @@ import enum
 from sqlalchemy.orm import Mapped
 
 # app specific
-from ..extensions import db
+from app.extensions import db
 
 
 class UserRole(enum.Enum):

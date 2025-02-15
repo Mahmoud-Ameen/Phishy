@@ -2,8 +2,8 @@ from flask import request
 from marshmallow import ValidationError
 from werkzeug.exceptions import BadRequest, UnsupportedMediaType
 
-from ..core.exceptions import InvalidCredentials
-from ..core.response import ApiResponse
+from app.core.exceptions import InvalidCredentials
+from app.core.response import ApiResponse
 from .service import AuthService
 from .schemas import LoginSchema
 

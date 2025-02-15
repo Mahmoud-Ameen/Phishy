@@ -1,5 +1,5 @@
-from app.employees.entitiy import Employee, Criticality
-from app.employees.repository import EmployeeRepository
+from app.company.employees.entitiy import Employee, Criticality
+from app.company.employees.repository import EmployeeRepository
 
 
 class EmployeeService:

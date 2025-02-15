@@ -1,8 +1,8 @@
 from sqlalchemy.exc import IntegrityError
 from .models import EmployeeModel, DepartmentModel
 from .entitiy import Employee
-from .. import db
-from ..core.exceptions import (
+from app import db
+from app.core.exceptions import (
     DepartmentDoesntExist, 
     DepartmentAlreadyExists, 
     EmployeeAlreadyExists
