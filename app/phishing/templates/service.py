@@ -24,4 +24,9 @@ class TemplateService:
 
     @staticmethod
     def get_template_by_id(template_id: int) -> PhishingTemplate:
+        """
+        Get a phishing template by its id
+        Raises
+            TemplateDoesntExist if the template is not found
+        """
         return TemplateRepository.get_template_by_id(template_id)
