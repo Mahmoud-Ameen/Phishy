@@ -7,7 +7,7 @@ class CampaignModel(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     start_date: datetime = db.Column(db.DateTime, default=datetime.utcnow)
     name: str = db.Column(db.String(255), nullable=False)
-    started_by: int = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    started_by: str = db.Column(db.String, db.ForeignKey('users.email'), nullable=False)
     # phishing_emails: Mapped["PhishingEmail"] = db.relationship("PhishingEmail", backref="campaign", lazy=True)
 
     def to_dict(self):
