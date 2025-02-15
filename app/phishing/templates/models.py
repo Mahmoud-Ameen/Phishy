@@ -2,6 +2,7 @@ from ...extensions import db
 
 
 class TemplateModel(db.Model):
+    __tablename__ = "phishing_templates"
     id = db.Column(db.Integer, primary_key=True)
     level = db.Column(db.Integer, nullable=False)
     subject = db.Column(db.Text)
