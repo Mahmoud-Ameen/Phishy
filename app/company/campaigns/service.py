@@ -1,5 +1,6 @@
 from .entity import Campaign
 from .repository import CampaignRepository
+from ...phishing.phishing.phishing_service import PhishingService
 
 
 class CampaignService:
@@ -25,8 +26,7 @@ class CampaignService:
         camp = CampaignRepository.create_campaign(campaign_name, admin_email)
 
         # send emails
-        for email in emails:
-            print(f"Sending a phishing email to {email} with template {template_id}")
+        PhishingService.send_phishing_emails(emails, template_id, camp.id)
 
         return camp
 

@@ -29,7 +29,16 @@ class EmployeeAlreadyExists(AppException):
 class DepartmentDoesntExist(AppException):
     pass
 
+
 class DepartmentAlreadyExists(AppException):
+    pass
+
+
+class TemplateDoesntExist(AppException):
+    pass
+
+
+class EmployeeDoesntExist(AppException):
     pass
 
 # endregion
