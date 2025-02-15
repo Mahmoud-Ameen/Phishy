@@ -1,5 +1,6 @@
 from .models import TemplateModel
 from .entity import PhishingTemplate
+from ...core.exceptions import TemplateDoesntExist
 from ...extensions import db
 
 
@@ -36,8 +37,17 @@ class TemplateRepository:
 
     @staticmethod
     def get_template_by_id(template_id: int) -> PhishingTemplate:
-        template = TemplateModel.query.get(template_id)
-        return TemplateRepository._model_to_entity(template)
+        """
+        Get a phishing template by its id
+        :param template_id: template id
+        :raises: TemplateDoesntExist if the template is not found
+        """ ""
+
+        try:
+            template = TemplateModel.query.get(template_id)
+            return TemplateRepository._model_to_entity(template)
+        except AttributeError:
+            raise TemplateDoesntExist(f"Template with id {template_id} not found")
 
     @staticmethod
     def _model_to_entity(template: TemplateModel) -> PhishingTemplate:
