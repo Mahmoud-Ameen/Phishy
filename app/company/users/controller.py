@@ -5,7 +5,7 @@ from .entity import UserRole
 # app specific
 from .service import UserService
 from app.core.exceptions import UserAlreadyExists
-from app.middlewares.auth import admin_required
+from app.core.middlewares import admin_required
 from app.core.response import ApiResponse
 from .schemas import UserRegisterSchema, UserResponseSchema
 

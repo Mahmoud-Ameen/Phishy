@@ -6,7 +6,7 @@ from app.core.response import ApiResponse
 from .entitiy import Employee
 from .service import EmployeeService, DepartmentService
 from app.core.exceptions import EmployeeAlreadyExists, DepartmentDoesntExist, DepartmentAlreadyExists
-from app.middlewares.auth import admin_required
+from app.core.middlewares import admin_required
 from .schemas import EmployeeCreateSchema, DepartmentCreateSchema
 
 

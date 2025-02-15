@@ -2,7 +2,7 @@ from flask import request
 from flask_jwt_extended import jwt_required
 from marshmallow import ValidationError
 
-from ...middlewares.auth import admin_required
+from app.core.middlewares.auth import admin_required
 from .service import TemplateService
 from ...core.response import ApiResponse
 from .schemas import CreateTemplateSchema

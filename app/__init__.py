@@ -1,7 +1,7 @@
 from flask import Flask
 
 # app specific
-from app.middlewares.error_handler import register_error_handlers
+from app.core.middlewares import register_error_handlers
 from .extensions import db, jwt
 from .config import Config
 
