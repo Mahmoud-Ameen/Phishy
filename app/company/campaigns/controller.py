@@ -7,6 +7,7 @@ from app.core.middlewares.auth import admin_required
 from app.core.response import ApiResponse
 from .schemas import CreateCampaignSchema
 from .service import CampaignService
+from ...core.exceptions import TemplateDoesntExist
 
 
 class CampaignsController:
@@ -37,3 +38,5 @@ class CampaignsController:
             )
         except ValidationError as e:
             return ApiResponse.error("Invalid input body", 400, e.messages)
+        except TemplateDoesntExist:
+            return ApiResponse.error("Template does not exist", 400)

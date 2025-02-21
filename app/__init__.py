@@ -35,6 +35,10 @@ def create_app(config_class=Config):
     from app.company.campaigns.routes import campaigns_bp
     app.register_blueprint(campaigns_bp)
 
+    # Register tracking blueprints
+    from app.phishing.phishing.routes import tracking_bp
+    app.register_blueprint(tracking_bp)
+
     with app.app_context():
         db.create_all()
 
