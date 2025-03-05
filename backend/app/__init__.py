@@ -28,8 +28,16 @@ def create_app(config_class=Config):
     app.register_blueprint(departments_bp)
 
     # Register templates blueprints
-    from app.phishing.templates.routes import templates_bp
+    from app.phishing.scenarios.routes import templates_bp
     app.register_blueprint(templates_bp)
+
+    # Register scenarios blueprints
+    from app.phishing.scenarios.routes import scenarios_bp
+    app.register_blueprint(scenarios_bp)
+
+    # Register domains blueprints
+    from app.phishing.scenarios.routes import domains_bp
+    app.register_blueprint(domains_bp)
 
     # Register campaigns blueprints
     from app.company.campaigns.routes import campaigns_bp
