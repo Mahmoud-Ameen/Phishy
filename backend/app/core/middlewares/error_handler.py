@@ -15,6 +15,16 @@ def register_error_handlers(app):
         logger.error(f"Resource not found: {e}")
         return ApiResponse.error("Resource not found", 404)
 
+    @app.errorhandler(415)
+    def handle_unsupported_media_type_error(e):
+        logger.error(f"Unsupported media type: {e}")
+        return ApiResponse.error("Unsupported media type", 415)
+
+    @app.errorhandler(400)
+    def handle_bad_request_error(e):
+        logger.error(f"Bad request: {e}")
+        return ApiResponse.error("Bad request", 400)
+
     @app.errorhandler(Exception)
     def handle_generic_exception(e: Exception):
         logger.error(f"Unexpected error: {e}", e.__traceback__)
