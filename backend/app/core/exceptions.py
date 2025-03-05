@@ -41,4 +41,13 @@ class TemplateDoesntExist(AppException):
 class EmployeeDoesntExist(AppException):
     pass
 
+
+class DomainAlreadyExists(AppException):
+    pass
+
+
+class ScenarioDoesntExist(AppException):
+    pass
+
+
 # endregion
