@@ -50,4 +50,16 @@ class ScenarioDoesntExist(AppException):
     pass
 
 
+class ResourceDoesntExist(AppException):
+    pass
+
+
+class ResourceAlreadyExists(AppException):
+    pass
+
+
+class DomainDoesntExist(AppException):
+    pass
+
+
 # endregion
