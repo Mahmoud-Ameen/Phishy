@@ -1,9 +1,9 @@
-from .models import TemplateModel, ScenarioModel, DomainModel
-from .entity import PhishingTemplate, PhishingScenario, PhishingDomain
-from ...core.exceptions import DomainAlreadyExists, TemplateDoesntExist, ScenarioDoesntExist
+from .models import TemplateModel, ScenarioModel
+from .entity import PhishingTemplate, PhishingScenario
+from ...core.exceptions import TemplateDoesntExist, ScenarioDoesntExist
 from ...extensions import db
 from typing import List
-from sqlalchemy.exc import IntegrityError
+
 
 class TemplateRepository:
     @staticmethod
@@ -68,43 +68,21 @@ class TemplateRepository:
 class ScenarioRepository:
     @staticmethod
     def create_scenario(name: str, level: int, description: str | None = None) -> PhishingScenario:
-        scenario = ScenarioModel(name=name, level=level, description=description)
+        scenario = ScenarioModel(name=name, description=description, level=level)
         db.session.add(scenario)
         db.session.commit()
+        return ScenarioRepository._model_to_entity(scenario)
+
+    @staticmethod
+    def get_scenarios() -> List[PhishingScenario]:
+        scenarios = ScenarioModel.query.all()
+        return [ScenarioRepository._model_to_entity(scenario) for scenario in scenarios]
+    
+    @staticmethod
+    def _model_to_entity(scenario: ScenarioModel) -> PhishingScenario:
         return PhishingScenario(
             id=scenario.id,
             name=scenario.name,
             description=scenario.description,
             level=scenario.level
         )
-
-    @staticmethod
-    def get_scenarios() -> List[PhishingScenario]:
-        return [PhishingScenario(
-            id=scenario.id,
-            name=scenario.name,
-            description=scenario.description,
-            level=scenario.level
-        ) for scenario in ScenarioModel.query.all()]
-
-
-class DomainRepository:
-    @staticmethod
-    def add_domain(domain_name: str, is_active: bool = True) -> PhishingDomain:
-        try:
-            domain = DomainModel(domain_name=domain_name, is_active=is_active)
-            db.session.add(domain)
-            db.session.commit()
-            return PhishingDomain(
-                domain_name=domain.domain_name,
-                is_active=domain.is_active
-            )
-        except IntegrityError:
-            raise DomainAlreadyExists(f"Domain with name {domain_name} already exists")
-
-    @staticmethod
-    def get_domains() -> List[PhishingDomain]:
-        return [PhishingDomain(
-            domain_name=domain.domain_name,
-            is_active=domain.is_active
-        ) for domain in DomainModel.query.all()]

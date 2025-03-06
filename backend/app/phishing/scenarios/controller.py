@@ -1,13 +1,12 @@
-from flask import request, jsonify
+from flask import request
 from flask_jwt_extended import jwt_required
+from ...core.middlewares.auth import admin_required
 from marshmallow import ValidationError
-
-from app.core.exceptions import DomainAlreadyExists, ScenarioDoesntExist
-from app.core.middlewares.auth import admin_required
 from .service import TemplateService
 from ...core.response import ApiResponse
-from .schemas import CreateTemplateSchema, CreateScenarioSchema, CreateDomainSchema
-from .repository import TemplateRepository, ScenarioRepository, DomainRepository
+from .schemas import CreateTemplateSchema, CreateScenarioSchema
+from .repository import TemplateRepository, ScenarioRepository
+from ...core.exceptions import ScenarioDoesntExist
 
 
 class TemplatesController:
@@ -44,23 +43,3 @@ class ScenariosController:
             return ApiResponse.success({"scenario": scenario.to_dict()}, 201)
         except ValidationError as e:
             return ApiResponse.error("Invalid request body", 400, e.messages)
-
-
-class DomainsController:
-    @staticmethod
-    def get_domains():
-        domains = DomainRepository.get_domains()
-        return ApiResponse.success({"domains": [domain.to_dict() for domain in domains]})
-
-    @staticmethod
-    @admin_required
-    def create_domain():
-        try:
-            data = request.get_json()
-            schema = CreateDomainSchema(**data)
-            domain = DomainRepository.add_domain(**schema.model_dump())
-            return ApiResponse.success({"domain": domain.to_dict()}, 201)
-        except ValidationError as e:
-            return ApiResponse.error("Invalid request body", 400, e.messages)
-        except DomainAlreadyExists as e:
-            return ApiResponse.error("Domain already exists", 400)
