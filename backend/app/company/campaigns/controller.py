@@ -28,15 +28,28 @@ class CampaignsController:
 
             # start campaign
             user_email = get_jwt_identity()
-            campaign = CampaignService.start_campaign(campaign_name=data["name"],
-                                                      admin_email=user_email,
-                                                      template_id=data["template_id"],
-                                                      emails=data["employee_emails"])
+            campaign = CampaignService.start_campaign(
+                campaign_name=data["name"],
+                admin_email=user_email,
+                emails=data["employee_emails"],
+                scenario_id=data["scenario_id"]
+            )
             return ApiResponse.success(
-                {"campaign": campaign},
+                {"campaign": campaign.to_dict()},
                 "Campaign started successfully"
             )
         except ValidationError as e:
             return ApiResponse.error("Invalid input body", 400, e.messages)
         except TemplateDoesntExist:
             return ApiResponse.error("Template does not exist", 400)
+        except ValueError as e:
+            return ApiResponse.error(str(e), 400)
+
+    @staticmethod
+    @jwt_required()
+    def get_campaign_status(campaign_id: int):
+        try:
+            status = CampaignService.get_campaign_status(campaign_id)
+            return ApiResponse.success(status)
+        except ValueError as e:
+            return ApiResponse.error(str(e), 404)
