@@ -31,11 +31,13 @@ class TemplatesController:
 
 class ScenariosController:
     @staticmethod
+    @jwt_required()
     def get_scenarios():
         scenarios = ScenarioRepository.get_scenarios()
         return ApiResponse.success({"scenarios": [scenario.to_dict() for scenario in scenarios]})
 
     @staticmethod
+    @admin_required
     def create_scenario():
         try:
             data = CreateScenarioSchema().load(request.get_json())
