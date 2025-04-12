@@ -11,6 +11,8 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    app.url_map.strict_slashes = False
+
     CORS(app)
 
     # Initialize extensions
