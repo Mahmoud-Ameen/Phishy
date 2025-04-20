@@ -2,7 +2,8 @@ from .models import TemplateModel, ScenarioModel
 from .entity import PhishingTemplate, PhishingScenario
 from ...core.exceptions import TemplateDoesntExist, ScenarioDoesntExist
 from ...extensions import db
-from typing import List
+from typing import List, cast
+from sqlalchemy.orm import RelationshipProperty
 
 
 class TemplateRepository:
@@ -10,7 +11,7 @@ class TemplateRepository:
     def get_templates() -> list[PhishingTemplate]:
         """ Get all phishing templates """
         templates: list[PhishingTemplate] =\
-            [TemplateRepository._model_to_entity(t) for t in TemplateModel.query.all()]
+            [TemplateRepository.model_to_entity(t) for t in TemplateModel.query.all()]
         return templates
 
     @staticmethod
@@ -40,7 +41,7 @@ class TemplateRepository:
         )
         db.session.add(template)
         db.session.commit()
-        return TemplateRepository._model_to_entity(template)
+        return TemplateRepository.model_to_entity(template)
 
     @staticmethod
     def get_template_by_id(template_id: int) -> PhishingTemplate:
@@ -51,17 +52,31 @@ class TemplateRepository:
         """
         try:
             template = TemplateModel.query.get(template_id)
-            return TemplateRepository._model_to_entity(template)
+            return TemplateRepository.model_to_entity(template)
         except AttributeError:
             raise TemplateDoesntExist(f"Template with id {template_id} not found")
 
     @staticmethod
-    def _model_to_entity(template: TemplateModel) -> PhishingTemplate:
+    def update_template(template_id: int, subject: str, content: str) -> PhishingTemplate:
+    
+        template = TemplateModel.query.get(template_id)
+   
+        if template is None:
+            raise TemplateDoesntExist(f"Template with id {template_id} not found")
+        
+        template.subject = subject
+        template.content = content
+        db.session.commit()
+        return TemplateRepository.model_to_entity(template)
+            
+
+    @staticmethod
+    def model_to_entity(template: TemplateModel) -> PhishingTemplate:
         return PhishingTemplate(
             id=template.id,
-            scenario_id=template.scenario_id,
             subject=template.subject,
-            content=template.content
+            content=template.content,
+            scenario_id=template.scenario_id
         )
 
 
