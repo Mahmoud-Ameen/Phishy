@@ -5,7 +5,7 @@ class EmployeeCreateSchema(Schema):
     email = fields.Email(required=True)
     first_name = fields.Str(required=True)
     last_name = fields.Str(required=True)
-    criticality = fields.Str(required=True, validate=validate.OneOf(['low', 'med', 'high']))
+    criticality = fields.Str(required=True, validate=validate.OneOf(['low', 'medium', 'high']))
     dept_name = fields.Str(required=True)
 
 
