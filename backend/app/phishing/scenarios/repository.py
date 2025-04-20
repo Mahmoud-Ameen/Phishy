@@ -49,7 +49,8 @@ class TemplateRepository:
         Get a phishing template by its id
         :param template_id: template id
         :raises: TemplateDoesntExist if the template is not found
-        """
+        """ ""
+
         try:
             template = TemplateModel.query.get(template_id)
             return TemplateRepository.model_to_entity(template)
@@ -92,12 +93,79 @@ class ScenarioRepository:
     def get_scenarios() -> List[PhishingScenario]:
         scenarios = ScenarioModel.query.all()
         return [ScenarioRepository._model_to_entity(scenario) for scenario in scenarios]
-    
+
+    @staticmethod
+    def get_scenario(scenario_id) -> PhishingScenario:
+        scenario = ScenarioModel.query.get(scenario_id)
+        if not scenario:
+            raise ScenarioDoesntExist(f"Scenario with id {scenario_id} not found")
+        return ScenarioRepository._model_to_entity(scenario)
+
+    @staticmethod
+    def update_scenario(scenario_id: int, name: str, level: int, description: str | None = None) -> PhishingScenario:
+        """
+        Update a scenario's details
+        
+        Args:
+            scenario_id: ID of the scenario to update
+            name: New name for the scenario
+            level: New difficulty level
+            description: New description (optional)
+            
+        Returns:
+            Updated PhishingScenario entity
+            
+        Raises:
+            ScenarioDoesntExist: if scenario_id doesn't exist
+        """
+        scenario = ScenarioModel.query.get(scenario_id)
+        if not scenario:
+            raise ScenarioDoesntExist(f"Scenario with id {scenario_id} not found")
+
+        scenario.name = name
+        scenario.level = level
+        scenario.description = description
+
+        db.session.commit()
+        return ScenarioRepository._model_to_entity(scenario)
+
+    @staticmethod
+    def delete_scenario(scenario_id: int) -> bool:
+        """
+        Delete a scenario and its associated template
+        
+        Args:
+            scenario_id: ID of the scenario to delete
+            
+        Returns:
+            True if deleted successfully
+            
+        Raises:
+            ScenarioDoesntExist: if scenario_id doesn't exist
+        """
+        scenario = ScenarioModel.query.get(scenario_id)
+        if not scenario:
+            raise ScenarioDoesntExist(f"Scenario with id {scenario_id} not found")
+
+        # Delete associated template if it exists
+        if scenario.template:
+            db.session.delete(scenario.template)
+
+        db.session.delete(scenario)
+        db.session.commit()
+        return True
+
     @staticmethod
     def _model_to_entity(scenario: ScenarioModel) -> PhishingScenario:
+        template: PhishingTemplate | None = None
+        if scenario.template is not None:
+            template_model = cast(TemplateModel, scenario.template)
+            template = TemplateRepository.model_to_entity(template_model)
+
         return PhishingScenario(
             id=scenario.id,
             name=scenario.name,
             description=scenario.description,
-            level=scenario.level
+            level=scenario.level,
+            template=template
         )

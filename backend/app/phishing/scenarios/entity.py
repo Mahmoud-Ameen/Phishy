@@ -23,12 +23,14 @@ class PhishingScenario:
     name: str
     description: str | None
     level: int
+    template: PhishingTemplate
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
             'description': self.description,
-            'level': self.level
+            'level': self.level,
+            'template': self.template
         }
 

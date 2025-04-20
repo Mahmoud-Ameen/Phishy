@@ -6,7 +6,7 @@ from .service import TemplateService
 from ...core.response import ApiResponse
 from .schemas import CreateTemplateSchema, CreateScenarioSchema, UpdateTemplateSchema, UpdateScenarioSchema
 from .repository import TemplateRepository, ScenarioRepository
-from ...core.exceptions import ScenarioDoesntExist
+from ...core.exceptions import ScenarioDoesntExist, TemplateDoesntExist
 
 
 class TemplatesController:
@@ -71,15 +71,57 @@ class ScenariosController:
     @staticmethod
     @jwt_required()
     def get_scenarios():
-        scenarios = ScenarioRepository.get_scenarios()
-        return ApiResponse.success({"scenarios": [scenario.to_dict() for scenario in scenarios]})
+        scenarios_data = ScenarioRepository.get_scenarios()
+        return ApiResponse.success({"scenarios": scenarios_data})
+
+    @staticmethod
+    @jwt_required()
+    def get_scenario(scenario_id):
+        try:
+            scenario = ScenarioRepository.get_scenario(scenario_id)
+            return ApiResponse.success({"scenario": scenario})
+        except ScenarioDoesntExist:
+            return ApiResponse.error("Scenario not found", 404)
+        except Exception as e:
+            print(f"Error fetching scenario {scenario_id}: {e}")
+            return ApiResponse.error("Failed to fetch scenario", 500)
 
     @staticmethod
     @admin_required
     def create_scenario():
         try:
             data = CreateScenarioSchema().load(request.get_json())
-            scenario = ScenarioRepository.create_scenario(**data)
-            return ApiResponse.success({"scenario": scenario.to_dict()}, 201)
+            scenario_entity = ScenarioRepository.create_scenario(**data)
+            return ApiResponse.success({"scenario": scenario_entity.to_dict()}, 201)
         except ValidationError as e:
             return ApiResponse.error("Invalid request body", 400, e.messages)
+        except Exception as e:
+            print(f"Error creating scenario: {e}")
+            return ApiResponse.error("Failed to create scenario", 500)
+
+    @staticmethod
+    @admin_required
+    def update_scenario(scenario_id):
+        try:
+            data = UpdateScenarioSchema().load(request.get_json())
+            updated_scenario = ScenarioRepository.update_scenario(scenario_id, **data)
+            return ApiResponse.success({"scenario": updated_scenario.to_dict()})
+        except ValidationError as e:
+            return ApiResponse.error("Invalid request body", 400, e.messages)
+        except ScenarioDoesntExist:
+            return ApiResponse.error("Scenario not found", 404)
+        except Exception as e:
+            print(f"Error updating scenario {scenario_id}: {e}")
+            return ApiResponse.error("Failed to update scenario", 500)
+
+    @staticmethod
+    @admin_required
+    def delete_scenario(scenario_id):
+        try:
+            ScenarioRepository.delete_scenario(scenario_id)
+            return ApiResponse.success(message="Scenario deleted successfully")
+        except ScenarioDoesntExist:
+            return ApiResponse.error("Scenario not found", 404)
+        except Exception as e:
+            print(f"Error deleting scenario {scenario_id}: {e}")
+            return ApiResponse.error("Failed to delete scenario", 500)

@@ -11,4 +11,7 @@ templates_bp.route('/<int:template_id>', methods=['DELETE'])(TemplatesController
 # Scenarios routes
 scenarios_bp = Blueprint('scenarios', __name__, url_prefix='/api/scenarios')
 scenarios_bp.route('/', methods=['GET'])(ScenariosController.get_scenarios)
+scenarios_bp.route('/<int:scenario_id>', methods=["GET"])(ScenariosController.get_scenario)
 scenarios_bp.route('/', methods=['POST'])(ScenariosController.create_scenario)
+scenarios_bp.route('/<int:scenario_id>', methods=['PUT'])(ScenariosController.update_scenario)
+scenarios_bp.route('/<int:scenario_id>', methods=['DELETE'])(ScenariosController.delete_scenario)
