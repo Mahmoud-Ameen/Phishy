@@ -7,4 +7,5 @@ export const API_ENDPOINTS = {
 	templates: `${API_BASE_URL}/templates`,
 	employees: `${API_BASE_URL}/employees`,
 	departments: `${API_BASE_URL}/departments`,
+	campaigns: `${API_BASE_URL}/campaigns`,
 };

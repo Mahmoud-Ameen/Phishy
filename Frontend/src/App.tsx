@@ -7,8 +7,12 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/login";
 import OverviewPage from "@/pages/overview";
 import CampaignsPage from "@/pages/campaigns";
+import ScenariosPage from "@/pages/scenarios";
+import EmployeesPage from "@/pages/employees";
 import BlogPage from "@/pages/blog";
 import AboutPage from "@/pages/about";
+import ScnearioPage from "@/pages/scenario";
+import CreateCampaignPage from "./pages/campaigns/create";
 
 function App() {
 	return (
@@ -35,6 +39,40 @@ function App() {
 							<CampaignsPage />
 						</ProtectedRoute>
 					}
+				/>
+				<Route
+					path="/scenarios"
+					element={
+						<ProtectedRoute>
+							<ScenariosPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/scenario/:id"
+					element={
+						<ProtectedRoute>
+							<ScnearioPage />
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/employees"
+					element={
+						<ProtectedRoute>
+							<EmployeesPage />
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/campaigns/create"
+					element={
+						<ProtectedRoute>
+								<CreateCampaignPage/>
+						</ProtectedRoute>
+					} 
 				/>
 
 				{/* Redirect root to overview */}

@@ -11,6 +11,7 @@
     "email": "email dev --dir ./src/emails"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@heroui/button": "2.2.9",
     "@heroui/code": "2.2.6",
     "@heroui/dropdown": "2.3.9",
@@ -27,10 +28,12 @@
     "@react-email/components": "^0.0.33",
     "@react-spring/web": "^9.7.5",
     "@react-types/shared": "3.26.0",
+    "axios": "^1.8.4",
     "clsx": "2.1.1",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
     "framer-motion": "^11.15.0",
+    "jwt-decode": "^4.0.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-icons": "^5.5.0",
@@ -59,6 +62,7 @@
     "postcss": "8.4.38",
     "prettier": "3.3.3",
     "react-email": "3.0.7",
+    "tailwindcss": "^3.4.17",
     "typescript": "5.6.3",
     "vite": "^5.2.0",
     "vite-tsconfig-paths": "^4.3.2"

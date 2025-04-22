@@ -24,3 +24,12 @@ class Employee:
             "criticality": self.criticality.value,
             "dept_name": self.dept_name
         }
+
+@dataclass 
+class Department:
+    name: str
+    
+    def to_dict(self):
+        return {
+            "name": self.name
+        }

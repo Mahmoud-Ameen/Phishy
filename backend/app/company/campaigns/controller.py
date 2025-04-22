@@ -36,7 +36,7 @@ class CampaignsController:
             )
             return ApiResponse.success(
                 {"campaign": campaign.to_dict()},
-                "Campaign started successfully"
+                "Campaign accepted for processing",
             )
         except ValidationError as e:
             return ApiResponse.error("Invalid input body", 400, e.messages)
@@ -44,6 +44,9 @@ class CampaignsController:
             return ApiResponse.error("Template does not exist", 400)
         except ValueError as e:
             return ApiResponse.error(str(e), 400)
+        except Exception as e:
+            print("Error starting campaign:", e)
+            return ApiResponse.error("Failed to enqueue campaign start task", 500)
 
     @staticmethod
     @jwt_required()

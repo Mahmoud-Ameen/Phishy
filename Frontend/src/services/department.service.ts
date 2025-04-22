@@ -26,22 +26,8 @@ export const departmentService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get<{
-				data: { departments: string[] };
-				message: string;
-				status: string;
-			}>(API_ENDPOINTS.departments, { headers });
-			const departmentsArray = response.data.data.departments.map((name) => ({
-				name,
-			}));
-			const result: DepartmentsResponse = {
-				message: response.data.message,
-				status: response.data.status,
-				data: {
-					departments: departmentsArray,
-				},
-			};
-			return result;
+			const response = await axios.get<DepartmentsResponse>(API_ENDPOINTS.departments, { headers });
+			return response.data;
 		} catch (error) {
 			console.error("Error fetching departments:", error);
 			throw error;

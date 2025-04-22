@@ -1,4 +1,4 @@
-from app.company.employees.entitiy import Employee, Criticality
+from app.company.employees.entitiy import Department, Employee, Criticality
 from app.company.employees.repository import EmployeeRepository
 
 
@@ -24,11 +24,11 @@ class EmployeeService:
 
 class DepartmentService:
     @staticmethod
-    def get_departments() -> list[str]:
+    def get_departments() -> list[Department]:
         return EmployeeRepository.get_departments()
 
     @staticmethod
-    def create_department(name: str) -> str:
+    def create_department(name: str) -> Department:
         """
         Create a department
         :raises DepartmentAlreadyExists: if department already exists

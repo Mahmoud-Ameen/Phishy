@@ -1,0 +1,15 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+Flask-Login==0.6.3
+Flask-WTF==1.2.1
+Flask-Cors==4.0.1
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+email-validator==2.1.1
+pydantic==2.7.1
+gunicorn==22.0.0
+# Flask-RQ2==18.4 # Removed for Huey
+# huey[redis]~=2.5.0 # Removed Huey
+# celery[redis]~=5.4.0 # Removed Celery
+# redis==5.0.4 # Removed Redis 

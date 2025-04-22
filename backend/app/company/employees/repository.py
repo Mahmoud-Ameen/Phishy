@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from .models import EmployeeModel, DepartmentModel
-from .entitiy import Employee
+from .entitiy import Criticality, Employee, Department
 from app import db
 from app.core.exceptions import (
     DepartmentDoesntExist, 
@@ -47,12 +47,12 @@ class EmployeeRepository:
             raise EmployeeAlreadyExists(f"Employee with email '{employee.email}' already exists")
 
     @staticmethod
-    def get_departments() -> list[str]:
+    def get_departments() -> list[Department]:
         departments = DepartmentModel.query.all()
-        return [dept.name for dept in departments]
+        return [EmployeeRepository.department_model_to_entity(dept) for dept in departments]
 
     @staticmethod
-    def create_department(name: str) -> str:
+    def create_department(name: str) -> Department:
         """
         Create a department 
         :param name: department name    
@@ -64,7 +64,7 @@ class EmployeeRepository:
         try:
             db.session.add(department)
             db.session.commit()
-            return department.name
+            return EmployeeRepository.department_model_to_entity(department)
         except IntegrityError:
             db.session.rollback()
             raise DepartmentAlreadyExists(f"Department '{name}' already exists")
@@ -75,6 +75,10 @@ class EmployeeRepository:
             email=employee.email,
             first_name=employee.first_name,
             last_name=employee.last_name,
-            criticality=employee.criticality,
+            criticality=Criticality(employee.criticality.value),
             dept_name=employee.dept_name
         )
+
+    @staticmethod
+    def department_model_to_entity(department: DepartmentModel) -> Department:
+        return Department(name=department.name)

@@ -41,7 +41,7 @@ class DepartmentsController:
     @jwt_required()
     def get_departments():
         departments = DepartmentService.get_departments()
-        return ApiResponse.success({"departments": departments})
+        return ApiResponse.success({"departments": [d.to_dict() for d in departments]})
 
     @staticmethod
     @jwt_required()
@@ -51,7 +51,7 @@ class DepartmentsController:
             data = DepartmentCreateSchema().load(request.json)
             department = DepartmentService.create_department(data['name'])
             return ApiResponse.success(
-                {"department": department}, 
+                {"department": department.to_dict()}, 
                 "Department created successfully"
             )
         except ValidationError as e:
