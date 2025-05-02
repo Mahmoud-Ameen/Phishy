@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
 
 export interface Template {
@@ -49,7 +49,7 @@ export const scenarioService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get<ScenariosResponse>(API_ENDPOINTS.scenarios, {
+			const response = await api.get<ScenariosResponse>(API_ENDPOINTS.scenarios, {
 				headers,
 			});
 			return response.data;
@@ -62,7 +62,7 @@ export const scenarioService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get<ScenarioResponse>(`${API_ENDPOINTS.scenarios}/${id}`, {
+			const response = await api.get<ScenarioResponse>(`${API_ENDPOINTS.scenarios}/${id}`, {
 				headers,
 			});
 			return response.data;
@@ -76,7 +76,7 @@ export const scenarioService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.post<ScenarioResponse>(
+			const response = await api.post<ScenarioResponse>(
 				API_ENDPOINTS.scenarios,
 				scenarioData,
 				{
@@ -94,7 +94,7 @@ export const scenarioService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.put<ScenarioResponse>(
+			const response = await api.put<ScenarioResponse>(
 				`${API_ENDPOINTS.scenarios}/${id}`,
 				scenarioData,
 				{ headers }
@@ -110,7 +110,7 @@ export const scenarioService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.delete(`${API_ENDPOINTS.scenarios}/${id}`, {
+			const response = await api.delete(`${API_ENDPOINTS.scenarios}/${id}`, {
 				headers,
 			});
 			return response.data;

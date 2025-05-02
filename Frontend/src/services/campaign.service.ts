@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
 
 export interface Campaign {
@@ -7,6 +7,17 @@ export interface Campaign {
     start_date: string;
     started_by: string;
     scenario_id: number;
+}
+
+export interface PhishingEmail {
+    id: number;
+    recipient_email: string;
+    sent_at: string | null;
+    status: string;
+    error_message: string | null;
+    campaign_id: number;
+    template_id: number;
+    created_at: string;
 }
 
 export interface CampaignStatus {
@@ -28,14 +39,8 @@ interface CampaignsResponse {
 interface CampaignResponse {
     data: {
         campaign: Campaign;
-    };
-    message: string;
-    status: string;
-}
-
-interface CampaignStatusResponse {
-    data: {
         status: CampaignStatus;
+        emails?: PhishingEmail[];
     };
     message: string;
     status: string;
@@ -52,7 +57,7 @@ export const campaignService = {
         try {
             const token = localStorage.getItem("token");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const response = await axios.get<CampaignsResponse>(API_ENDPOINTS.campaigns, {
+            const response = await api.get<CampaignsResponse>(API_ENDPOINTS.campaigns, {
                 headers,
             });
             return response.data;
@@ -66,7 +71,7 @@ export const campaignService = {
         try {
             const token = localStorage.getItem("token");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const response = await axios.post<CampaignResponse>(
+            const response = await api.post<CampaignResponse>(
                 API_ENDPOINTS.campaigns,
                 data,
                 { headers }
@@ -78,18 +83,18 @@ export const campaignService = {
         }
     },
 
-    async getCampaignStatus(campaignId: number): Promise<CampaignStatusResponse> {
+    async getCampaign(campaignId: number): Promise<CampaignResponse> {
         try {
             const token = localStorage.getItem("token");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const response = await axios.get<CampaignStatusResponse>(
-                `${API_ENDPOINTS.campaigns}/${campaignId}/status`,
+            const response = await api.get<CampaignResponse>(
+                `${API_ENDPOINTS.campaigns}/${campaignId}`,
                 { headers }
             );
             return response.data;
         } catch (error) {
-            console.error("Error fetching campaign status:", error);
+            console.error("Error fetching campaign:", error);
             throw error;
         }
-    },
+    }
 };

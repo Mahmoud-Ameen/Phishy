@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
 
 interface LoginCredentials {
@@ -17,7 +17,7 @@ interface LoginResponse {
 export const authService = {
 	async login(credentials: LoginCredentials): Promise<LoginResponse> {
 		try {
-			const response = await axios.post<LoginResponse>(API_ENDPOINTS.login, credentials);
+			const response = await api.post<LoginResponse>(API_ENDPOINTS.login, credentials);
 
 			const data = response.data;
 

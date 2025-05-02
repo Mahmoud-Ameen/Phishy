@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
 
 interface Scenario {
@@ -42,7 +42,7 @@ export const templateService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get(API_ENDPOINTS.templates, { headers });
+			const response = await api.get(API_ENDPOINTS.templates, { headers });
 			return response.data;
 		} catch (error) {
 			console.error("Error fetching templates:", error);
@@ -54,7 +54,7 @@ export const templateService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.post(API_ENDPOINTS.templates, templateData, {
+			const response = await api.post(API_ENDPOINTS.templates, templateData, {
 				headers,
 			});
 			return response.data;
@@ -71,7 +71,7 @@ export const templateService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.put(`${API_ENDPOINTS.templates}/${id}`, templateData, {
+			const response = await api.put(`${API_ENDPOINTS.templates}/${id}`, templateData, {
 				headers,
 			});
 			return response.data;
@@ -85,7 +85,7 @@ export const templateService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.delete(`${API_ENDPOINTS.templates}/${id}`, { headers });
+			const response = await api.delete(`${API_ENDPOINTS.templates}/${id}`, { headers });
 			return response.data;
 		} catch (error) {
 			console.error("Error deleting template:", error);

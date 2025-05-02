@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
 
 interface Department {
@@ -26,7 +26,7 @@ export const departmentService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get<DepartmentsResponse>(API_ENDPOINTS.departments, { headers });
+			const response = await api.get<DepartmentsResponse>(API_ENDPOINTS.departments, { headers });
 			return response.data;
 		} catch (error) {
 			console.error("Error fetching departments:", error);
@@ -38,7 +38,7 @@ export const departmentService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.post(API_ENDPOINTS.departments, { name }, { headers });
+			const response = await api.post(API_ENDPOINTS.departments, { name }, { headers });
 			return response.data;
 		} catch (error) {
 			console.error("Error creating department:", error);

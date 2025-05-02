@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import DefaultLayout from "@/layouts/default";
 import {
 	Table,
@@ -13,103 +13,69 @@ import {
 	ModalHeader,
 	ModalBody,
 	ModalFooter,
-	Input,
-	Select,
-	SelectItem,
 	useDisclosure,
-	Selection,
 	Chip,
 	Spinner,
 	Progress,
-	CheckboxGroup,
-	Checkbox,
+	ButtonGroup,
 } from "@heroui/react";
-import { PlusIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ChartBarIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { Campaign, CampaignStatus, campaignService } from "@/services/campaign.service";
 import { Scenario, scenarioService } from "@/services/scenario.service";
-import { employeeService } from "@/services/employee.service";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 
-interface CampaignWithStatus extends Campaign {
+interface CampaignWithData extends Campaign {
 	scenario?: Scenario;
 	status?: CampaignStatus;
-}
-
-interface Employee {
-	email: string;
-	first_name: string;
-	last_name: string;
-	criticality: string;
-	dept_name: string;
 }
 
 export default function CampaignPage() {
 	const navigate = useNavigate();
 	const { isOpen: isStatsOpen, onOpen: onStatsOpen, onClose: onStatsClose } = useDisclosure();
-	const [campaigns, setCampaigns] = useState<CampaignWithStatus[]>([]);
-	const [scenarios, setScenarios] = useState<Scenario[]>([]);
-	const [employees, setEmployees] = useState<Employee[]>([]);
+	const [campaigns, setCampaigns] = useState<CampaignWithData[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [selectedCampaign, setSelectedCampaign] = useState<CampaignWithStatus | null>(null);
+	const [selectedCampaign, setSelectedCampaign] = useState<CampaignWithData | null>(null);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		fetchCampaigns();
-		fetchScenarios();
-		fetchEmployees();
 	}, []);
 
 	const fetchCampaigns = async () => {
+		setLoading(true);
+		setError(null);
+		
 		try {
-			const response = await campaignService.getCampaigns();
-			const campaignsWithStatus = await Promise.all(
-				response.data.campaigns.map(async (campaign) => {
-					try {
-						const statusResponse = await campaignService.getCampaignStatus(campaign.id);
-						const scenarioResponse = await scenarioService.getScenario(campaign.scenario_id);
-						return { 
-							...campaign, 
-							status: statusResponse.data.status,
-							scenario: scenarioResponse.data.scenario
-						};
-					} catch (error) {
-						console.error(`Error fetching details for campaign ${campaign.id}:`, error);
-						return campaign;
-					}
-				})
-			);
-			setCampaigns(campaignsWithStatus);
+			// Get all campaigns
+			const campaignsResponse = await campaignService.getCampaigns();
+			const campaignsList = campaignsResponse.data.campaigns;
+			
+			// Since we're using a single endpoint for campaign detail/status, we don't need all the parallel
+			// fetching or a cache. Just set the basic campaigns list.
+			setCampaigns(campaignsList);
 		} catch (error) {
 			console.error("Error fetching campaigns:", error);
+			setError("Failed to load campaigns. Please try again later.");
 			toast.error("Failed to load campaigns");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const fetchScenarios = async () => {
+	const handleViewStats = async (campaign: CampaignWithData) => {
 		try {
-			const response = await scenarioService.getAll();
-			setScenarios(response.data.scenarios);
+			// Fetch full campaign details 
+			const campaignResponse = await campaignService.getCampaign(campaign.id);
+			setSelectedCampaign({
+				...campaign,
+				status: campaignResponse.data.status
+			});
+			onStatsOpen();
 		} catch (error) {
-			console.error("Error fetching scenarios:", error);
-			toast.error("Failed to load scenarios");
+			console.error("Error fetching campaign details:", error);
+			toast.error("Failed to load campaign details");
 		}
-	};
-
-	const fetchEmployees = async () => {
-		try {
-			const response = await employeeService.getAll();
-			setEmployees(response.data.employees);
-		} catch (error) {
-			console.error("Error fetching employees:", error);
-			toast.error("Failed to load employees");
-		}
-	};
-	const handleViewStats = async (campaign: CampaignWithStatus) => {
-		setSelectedCampaign(campaign);
-		onStatsOpen();
 	};
 
 	const formatDate = (dateString: string) => {
@@ -121,6 +87,13 @@ export default function CampaignPage() {
 		if (percentage < 70) return "warning";
 		return "success";
 	};
+
+	// Sort campaigns by start date (newest first)
+	const sortedCampaigns = useMemo(() => {
+		return [...campaigns].sort((a, b) => 
+			new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+		);
+	}, [campaigns]);
 
 	if (loading) {
 		return (
@@ -145,62 +118,62 @@ export default function CampaignPage() {
 					</Button>
 				</div>
 
-				<Table aria-label="Phishing campaigns">
-					<TableHeader>
-						<TableColumn>NAME</TableColumn>
-						<TableColumn>SCENARIO</TableColumn>
-						<TableColumn>START DATE</TableColumn>
-						<TableColumn>PROGRESS</TableColumn>
-						<TableColumn>ACTIONS</TableColumn>
-					</TableHeader>
-					<TableBody>
-						{campaigns.map((campaign) => (
-							<TableRow key={campaign.id}>
-								<TableCell>{campaign.name}</TableCell>
-								<TableCell>
-									{campaign.scenario?.name || `Scenario ${campaign.scenario_id}`}
-									{campaign.scenario?.level && (
-										<Chip
-											size="sm"
-											color={campaign.scenario.level > 2 ? "danger" : "warning"}
-											className="ml-2">
-											Level {campaign.scenario.level}
-										</Chip>
-									)}
-								</TableCell>
-								<TableCell>{formatDate(campaign.start_date)}</TableCell>
-								<TableCell>
-									{campaign.status ? (
-										<div className="w-full max-w-md">
-											<div className="flex justify-between text-small mb-1">
-												<span>Sent: {campaign.status.sent_emails}/{campaign.status.total_emails}</span>
-												<span className="text-foreground/50">{Math.round((campaign.status.sent_emails / campaign.status.total_emails) * 100)}%</span>
-											</div>
-											<Progress
-												aria-label="Campaign progress"
-												value={(campaign.status.sent_emails / campaign.status.total_emails) * 100}
-												color={getProgressColor((campaign.status.sent_emails / campaign.status.total_emails) * 100)}
-												className="w-full"
-											/>
-										</div>
-									) : (
-										"Loading..."
-									)}
-								</TableCell>
-								<TableCell>
-									<Button
-										color="secondary"
-										variant="light"
-										size="sm"
-										startContent={<ChartBarIcon className="h-4 w-4" />}
-										onPress={() => handleViewStats(campaign)}>
-										View Stats
-									</Button>
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
+				{error && (
+					<div className="p-4 mb-4 bg-red-100 text-red-700 rounded-lg">
+						{error}
+					</div>
+				)}
+
+				{campaigns.length === 0 && !error ? (
+					<div className="text-center p-8 bg-default-100 rounded-lg">
+						<p className="text-default-600 mb-4">No campaigns found.</p>
+						<Button 
+							color="primary" 
+							onPress={() => navigate("/campaigns/create")}>
+							Create Your First Campaign
+						</Button>
+					</div>
+				) : (
+					<Table aria-label="Phishing campaigns">
+						<TableHeader>
+							<TableColumn>NAME</TableColumn>
+							<TableColumn>SCENARIO</TableColumn>
+							<TableColumn>START DATE</TableColumn>
+							<TableColumn>ACTIONS</TableColumn>
+						</TableHeader>
+						<TableBody>
+							{sortedCampaigns.map((campaign) => (
+								<TableRow key={campaign.id}>
+									<TableCell>{campaign.name}</TableCell>
+									<TableCell>
+										{campaign.scenario?.name || `Scenario ${campaign.scenario_id}`}
+									</TableCell>
+									<TableCell>{formatDate(campaign.start_date)}</TableCell>
+									<TableCell>
+										<ButtonGroup>
+											<Button
+												color="secondary"
+												variant="light"
+												size="sm"
+												startContent={<ChartBarIcon className="h-4 w-4" />}
+												onPress={() => handleViewStats(campaign)}>
+												Stats
+											</Button>
+											<Button
+												color="primary"
+												variant="light"
+												size="sm"
+												startContent={<EyeIcon className="h-4 w-4" />}
+												onPress={() => navigate(`/campaigns/${campaign.id}`)}>
+												Details
+											</Button>
+										</ButtonGroup>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				)}
 
 				{/* Campaign Stats Modal */}
 				<Modal isOpen={isStatsOpen} onClose={onStatsClose}>
@@ -245,6 +218,12 @@ export default function CampaignPage() {
 							)}
 						</ModalBody>
 						<ModalFooter>
+							<Button 
+								color="secondary" 
+								variant="light" 
+								onPress={() => navigate(`/campaigns/${selectedCampaign?.id}`)}>
+								View Details
+							</Button>
 							<Button color="primary" onPress={onStatsClose}>
 								Close
 							</Button>

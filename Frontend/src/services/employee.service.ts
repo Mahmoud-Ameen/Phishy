@@ -1,6 +1,6 @@
-import axios from "axios";
+import api from "./api";
 import { API_ENDPOINTS } from "../config/api";
-
+import { isAxiosError } from "axios";
 enum Criticality {
 	LOW = "low",
 	MEDIUM = "medium",
@@ -15,13 +15,6 @@ interface Employee {
 	dept_name: string;
 }
 
-interface EmployeeData {
-	email: string;
-	first_name: string;
-	last_name: string;
-	criticality: Criticality;
-	dept_name: string;
-}
 
 interface EmployeesResponse {
 	data: {
@@ -44,7 +37,7 @@ export const employeeService = {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.get(API_ENDPOINTS.employees, { headers });
+			const response = await api.get(API_ENDPOINTS.employees, { headers });
 			return response.data;
 		} catch (error) {
 			console.error("Error fetching employees:", error);
@@ -52,15 +45,15 @@ export const employeeService = {
 		}
 	},
 
-	async create(employeeData: EmployeeData): Promise<CreateEmployeeResponse> {
+	async create(employeeData: Employee): Promise<CreateEmployeeResponse> {
 		try {
 			const token = localStorage.getItem("token");
 			const headers = token ? { Authorization: `Bearer ${token}` } : {};
-			const response = await axios.post(API_ENDPOINTS.employees,  employeeData, {headers});
+			const response = await api.post(API_ENDPOINTS.employees,  employeeData, {headers});
 			return response.data;
 		} catch (error) {
 			console.error("Error creating employee:", error);
-			if (axios.isAxiosError(error) && error.response?.status === 409) {
+			if (isAxiosError(error) && error.response?.status === 409) {
 				throw new Error("Employee already exists");
 			}
 			throw error;

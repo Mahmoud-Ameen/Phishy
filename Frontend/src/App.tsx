@@ -13,6 +13,8 @@ import BlogPage from "@/pages/blog";
 import AboutPage from "@/pages/about";
 import ScnearioPage from "@/pages/scenario";
 import CreateCampaignPage from "./pages/campaigns/create";
+import CampaignDetailsPage from "./pages/campaigns/details";
+import DomainsPage from "./pages/Admin/DomainsPage";
 
 function App() {
 	return (
@@ -41,6 +43,22 @@ function App() {
 					}
 				/>
 				<Route
+					path="/campaigns/create"
+					element={
+						<ProtectedRoute>
+								<CreateCampaignPage/>
+						</ProtectedRoute>
+					} 
+				/>
+				<Route
+					path="/campaigns/:id"
+					element={
+						<ProtectedRoute>
+								<CampaignDetailsPage/>
+						</ProtectedRoute>
+					} 
+				/>
+				<Route
 					path="/scenarios"
 					element={
 						<ProtectedRoute>
@@ -66,13 +84,14 @@ function App() {
 					}
 				/>
 
+				{/* Domain Management Route */}
 				<Route
-					path="/campaigns/create"
+					path="/admin/domains"
 					element={
 						<ProtectedRoute>
-								<CreateCampaignPage/>
+							<DomainsPage />
 						</ProtectedRoute>
-					} 
+					}
 				/>
 
 				{/* Redirect root to overview */}
