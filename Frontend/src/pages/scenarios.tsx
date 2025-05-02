@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import DefaultLayout from "@/layouts/default";
 import {
 	Table,
@@ -16,6 +16,7 @@ import {
 	Input,
 	Textarea,
 	useDisclosure,
+	Spinner,
 } from "@heroui/react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,6 +40,7 @@ interface Template {
 }
 
 export default function ScenariosPage() {
+	// Modal controls
 	const {
 		isOpen: isScenarioModalOpen,
 		onOpen: onScenarioModalOpen,
@@ -58,6 +60,7 @@ export default function ScenariosPage() {
 	const { user } = useAuth();
 	const navigate = useNavigate();
 
+	// State
 	const [scenarios, setScenarios] = useState<Scenario[]>([]);
 	const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
 	const [newScenario, setNewScenario] = useState<Partial<Scenario>>({});
@@ -71,12 +74,20 @@ export default function ScenariosPage() {
 
 	const [scenarioError, setScenarioError] = useState<string | null>(null);
 	const [templateError, setTemplateError] = useState<string | null>(null);
+	const [loading, setLoading] = useState<boolean>(true);
 
+	// Load scenarios on component mount
 	useEffect(() => {
 		fetchScenarios();
 	}, []);
 
+	// Sort scenarios by level
+	const sortedScenarios = useMemo(() => {
+		return [...scenarios].sort((a, b) => a.level - b.level);
+	}, [scenarios]);
+
 	const fetchScenarios = async () => {
+		setLoading(true);
 		try {
 			setScenarioError(null);
 			const response = await scenarioService.getAll();
@@ -84,6 +95,8 @@ export default function ScenariosPage() {
 		} catch (error) {
 			console.error("Error fetching scenarios:", error);
 			setScenarioError("Failed to load scenarios.");
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -119,7 +132,8 @@ export default function ScenariosPage() {
 			});
 			setScenarios(
 				scenarios.map((s) =>
-					s.id === response.data.scenario.id ? response.data.scenario : s
+					s.id === response.data.scenario.id ? 
+					  { ...response.data.scenario, template: s.template } : s
 				)
 			);
 			setEditingScenario(null);
@@ -193,27 +207,28 @@ export default function ScenariosPage() {
 		}
 	};
 
-	const openScenarioModalForEdit = (scenario: Scenario) => {
+	// Memoized handlers for opening modals
+	const openScenarioModalForEdit = useCallback((scenario: Scenario) => {
 		setEditingScenario({ ...scenario });
 		setNewScenario({});
 		onScenarioModalOpen();
-	};
+	}, [onScenarioModalOpen]);
 
-	const openScenarioModalForCreate = () => {
+	const openScenarioModalForCreate = useCallback(() => {
 		setEditingScenario(null);
 		setNewScenario({});
 		onScenarioModalOpen();
-	};
+	}, [onScenarioModalOpen]);
 
-	const openTemplateModalForCreate = (scenarioId: number) => {
+	const openTemplateModalForCreate = useCallback((scenarioId: number) => {
 		setEditingTemplate(null);
 		setTemplateScenarioId(scenarioId);
 		setNewOrEditingTemplateData({});
 		setTemplateError(null);
 		onTemplateModalOpen();
-	};
+	}, [onTemplateModalOpen]);
 
-	const openTemplateModalForEdit = (template: Template) => {
+	const openTemplateModalForEdit = useCallback((template: Template) => {
 		setEditingTemplate(template);
 		setTemplateScenarioId(null);
 		setNewOrEditingTemplateData({
@@ -222,12 +237,22 @@ export default function ScenariosPage() {
 		});
 		setTemplateError(null);
 		onTemplateModalOpen();
-	};
+	}, [onTemplateModalOpen]);
 
-	const openPreviewModal = (content: string | null) => {
+	const openPreviewModal = useCallback((content: string | null) => {
 		setPreviewContent(content);
 		onPreviewModalOpen();
-	};
+	}, [onPreviewModalOpen]);
+
+	if (loading) {
+		return (
+			<DefaultLayout>
+				<div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+					<Spinner size="lg" />
+				</div>
+			</DefaultLayout>
+		);
+	}
 
 	return (
 		<DefaultLayout>
@@ -256,32 +281,41 @@ export default function ScenariosPage() {
 						</p>
 					)}
 
-					<Table aria-label="Scenarios and Templates List">
-						<TableHeader>
-							<TableColumn key="scenarioName">SCENARIO</TableColumn>
-							<TableColumn key="scenarioLevel">LEVEL</TableColumn>
-							<TableColumn key="templateSubject">TEMPLATE SUBJECT</TableColumn>
-						</TableHeader>
-						<TableBody items={scenarios} emptyContent="No scenarios found.">
-							{(item) => {
-								const { template } = item;
-								const scenario = item;
+					{scenarios.length === 0 ? (
+						<div className="text-center p-8 bg-default-100 rounded-lg">
+							<p className="text-default-600 mb-4">No scenarios found.</p>
+							<Button color="primary" onPress={openScenarioModalForCreate}>
+								Create Your First Scenario
+							</Button>
+						</div>
+					) : (
+						<Table aria-label="Scenarios and Templates List">
+							<TableHeader>
+								<TableColumn key="scenarioName">SCENARIO</TableColumn>
+								<TableColumn key="scenarioLevel">LEVEL</TableColumn>
+								<TableColumn key="templateSubject">TEMPLATE SUBJECT</TableColumn>
+							</TableHeader>
+							<TableBody items={sortedScenarios} emptyContent="No scenarios found.">
+								{(item) => {
+									const { template } = item;
+									const scenario = item;
 
-								return (
-									<TableRow
-										key={scenario.id}
-										onClick={() => {
-											navigate(`/scenario/${scenario.id}`);
-										}}
-										className="cursor-pointer hover:bg-gray-100">
-										<TableCell>{scenario.name}</TableCell>
-										<TableCell>Level {scenario.level}</TableCell>
-										<TableCell>{template?.subject || "-"}</TableCell>
-									</TableRow>
-								);
-							}}
-						</TableBody>
-					</Table>
+									return (
+										<TableRow
+											key={scenario.id}
+											onClick={() => {
+												navigate(`/scenario/${scenario.id}`);
+											}}
+											className="cursor-pointer hover:bg-gray-100">
+											<TableCell>{scenario.name}</TableCell>
+											<TableCell>Level {scenario.level}</TableCell>
+											<TableCell>{template?.subject || "-"}</TableCell>
+										</TableRow>
+									);
+								}}
+							</TableBody>
+						</Table>
+					)}
 				</div>
 
 				<Modal

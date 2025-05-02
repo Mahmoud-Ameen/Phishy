@@ -5,6 +5,7 @@ import { RiPieChartLine } from "react-icons/ri";
 import { MdOutlineCampaign } from "react-icons/md";
 import { BsClipboardCheck } from "react-icons/bs";
 import { FiUsers } from "react-icons/fi";
+import { GlobeAltIcon } from "@heroicons/react/24/outline";
 import { Avatar } from "@heroui/react";
 import admin from "../assets/admin.jpg";
 
@@ -16,27 +17,26 @@ function Navbar() {
 
 	// Synchronize the selected menu with the current URL path
 	useEffect(() => {
-		switch (location.pathname) {
-			case "/overview":
-				setSelected("Overview");
-				setTubePosition(-4);
-				break;
-			case "/campaigns":
-				setSelected("Campaigns");
-				setTubePosition(65);
-				break;
-			case "/scenarios":
-				setSelected("Scenarios");
-				setTubePosition(134);
-				break;
-			case "/employees":
-				setSelected("Employees");
-				setTubePosition(203);
-				break;
-			default:
-				setSelected("Overview");
-				setTubePosition(-4);
+		// Calculate position based on index to make it more maintainable
+		const items = ["/overview", "/campaigns", "/scenarios", "/employees", "/admin/domains"];
+		const itemHeight = 56; // Approximate height including gap (adjust as needed)
+		const initialOffset = -4; // Initial offset for the first item
+
+		const index = items.findIndex(path => location.pathname.startsWith(path));
+		
+		if (index !== -1) {
+			const itemName = location.pathname.split('/')[1]; // Get base name (e.g., 'overview', 'admin')
+			let selectedName = itemName.charAt(0).toUpperCase() + itemName.slice(1);
+			if(itemName === 'admin') selectedName = 'Domains'; // Specific case for admin/domains
+
+			setSelected(selectedName); 
+			setTubePosition(initialOffset + index * itemHeight);
+		} else {
+			// Default case if path doesn't match known items
+			setSelected("Overview");
+			setTubePosition(initialOffset);
 		}
+
 	}, [location.pathname]);
 
 	return (
@@ -48,7 +48,7 @@ function Navbar() {
 					<h2 className="text-md font-medium text-black ml-2">Admin</h2>
 				</div>
 				{/* Menu Items */}
-				<div className="grid grid-cols-1 gap-8 mt-16 relative ml-[1px]">
+				<div className="grid grid-cols-1 gap-6 mt-16 relative ml-[1px]">
 					{/* Tube */}
 					<div
 						className="absolute left-[-54px] h-10 w-2 bg-[#023E8A] rounded-full transition-transform transition-all ease-in-out duration-300"
@@ -113,6 +113,21 @@ function Navbar() {
 							}}>
 							<FiUsers className="text-[#023E8A] text-2xl mr-2"></FiUsers>
 							<h1 className="text-sm font-normal text-[#023E8A]">Employees</h1>
+						</button>
+					</div>
+
+					{/* Domains Menu Item (New) */}
+					<div>
+						<button
+							className="flex items-center"
+							onClick={() => {
+								if (selected !== "Domains") {
+									setSelected("Domains");
+									navigate("/admin/domains");
+								}
+							}}>
+							<GlobeAltIcon className="text-[#023E8A] text-2xl mr-2"></GlobeAltIcon>
+							<h1 className="text-sm font-normal text-[#023E8A]">Domains</h1>
 						</button>
 					</div>
 				</div>
