@@ -1,0 +1,56 @@
+from datetime import datetime
+from .entity import Campaign
+from .models import CampaignModel
+from app.extensions import db
+
+
+class CampaignRepository:
+    @staticmethod
+    def get_campaigns() -> list[Campaign]:
+        campaigns = CampaignModel.query.all()
+        return [CampaignRepository._model_to_entity(campaign) for campaign in campaigns]
+
+    @staticmethod
+    def get_campaign_by_id(id: int) -> Campaign | None:
+        campaign = CampaignModel.query.get(id)
+        return CampaignRepository._model_to_entity(campaign) if campaign else None
+
+    @staticmethod
+    def create_campaign(name: str, admin_email: str, scenario_id: int) -> Campaign:
+        campaign = CampaignModel(
+            name=name,
+            started_by=admin_email,
+            scenario_id=scenario_id
+        )
+        db.session.add(campaign)
+        db.session.commit()
+        return CampaignRepository._model_to_entity(campaign)
+
+    @staticmethod
+    def delete_campaign(id: int) -> bool:
+        """
+        Delete a campaign by ID
+        
+        Args:
+            id: The ID of the campaign to delete
+            
+        Returns:
+            bool: True if successfully deleted, False if campaign not found
+        """
+        campaign = CampaignModel.query.get(id)
+        if not campaign:
+            return False
+            
+        db.session.delete(campaign)
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def _model_to_entity(campaign_model: CampaignModel) -> Campaign:
+        return Campaign(
+            id=campaign_model.id,
+            name=campaign_model.name,
+            start_date=campaign_model.start_date,
+            started_by=campaign_model.started_by,
+            scenario_id=campaign_model.scenario_id
+        )

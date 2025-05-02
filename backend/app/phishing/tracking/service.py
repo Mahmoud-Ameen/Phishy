@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from .entity import PhishingTarget, PhishingInteraction, EmailOpen
 from .repository import PhishingTargetRepository, PhishingInteractionRepository, EmailOpenRepository
+from app.phishing.phishing_emails.repository import PhishingEmailRepository
 
 
 class TrackingService:
@@ -73,7 +74,7 @@ class TrackingService:
         return EmailOpenRepository.get_by_tracking_key(tracking_key)
 
     @staticmethod
-    def record_email_open(
+    def record_open(
         tracking_key: str,
         ip_address: str,
         user_agent: Optional[str] = None
@@ -87,18 +88,102 @@ class TrackingService:
         Returns:
             EmailOpen: The recorded email open
         """
-        return EmailOpenRepository.create(
+        # Record in email_opens table
+        open_record = EmailOpenRepository.create(
             tracking_key=tracking_key,
             ip_address=ip_address,
             user_agent=user_agent
         )
+        
+        # Record in interactions table
+        TrackingService.record_interaction(
+            tracking_key=tracking_key,
+            interaction_type="email_open",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        
+        # Update the phishing_email status if exists
+        target = PhishingTargetRepository.get_by_tracking_key(tracking_key)
+        if target and target.phishing_email_id:
+            PhishingEmailRepository.update_status(target.phishing_email_id, "opened")
+            
+        return open_record
+
+    @staticmethod
+    def record_click(
+        tracking_key: str,
+        ip_address: str,
+        user_agent: Optional[str] = None
+    ) -> PhishingInteraction:
+        """
+        Record a link click
+        Args:
+            tracking_key: The tracking key associated with the click
+            ip_address: IP address of the click
+            user_agent: User agent string of the click
+        Returns:
+            PhishingInteraction: The recorded interaction
+        """
+        interaction = TrackingService.record_interaction(
+            tracking_key=tracking_key,
+            interaction_type="click",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        
+        # Update the phishing_email status if exists
+        target = PhishingTargetRepository.get_by_tracking_key(tracking_key)
+        if target and target.phishing_email_id:
+            PhishingEmailRepository.update_status(target.phishing_email_id, "clicked")
+            
+        return interaction
+
+    @staticmethod
+    def record_submission(
+        tracking_key: str,
+        ip_address: str,
+        user_agent: Optional[str] = None,
+        form_data: Optional[Dict[str, Any]] = None
+    ) -> PhishingInteraction:
+        """
+        Record a form submission
+        Args:
+            tracking_key: The tracking key associated with the submission
+            ip_address: IP address of the submission
+            user_agent: User agent string of the submission
+            form_data: Form data submitted
+        Returns:
+            PhishingInteraction: The recorded interaction
+        """
+        # Convert form_data to string if provided
+        metadata = None
+        if form_data:
+            import json
+            metadata = json.dumps(form_data)
+            
+        interaction = TrackingService.record_interaction(
+            tracking_key=tracking_key,
+            interaction_type="submission",
+            ip_address=ip_address,
+            user_agent=user_agent,
+            metadata=metadata
+        )
+        
+        # Update the phishing_email status if exists
+        target = PhishingTargetRepository.get_by_tracking_key(tracking_key)
+        if target and target.phishing_email_id:
+            PhishingEmailRepository.update_status(target.phishing_email_id, "submitted")
+            
+        return interaction
 
     @staticmethod
     def record_interaction(
         tracking_key: str,
         interaction_type: str,
         ip_address: str,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        metadata: Optional[str] = None
     ) -> PhishingInteraction:
         """
         Record a phishing interaction (email open, click, etc.)
@@ -107,6 +192,7 @@ class TrackingService:
             interaction_type: Type of interaction (email_open, click, etc.)
             ip_address: IP address of the interaction
             user_agent: User agent string of the interaction
+            metadata: Optional additional data about the interaction
         Returns:
             PhishingInteraction: The recorded interaction
         """
@@ -114,5 +200,6 @@ class TrackingService:
             tracking_key=tracking_key,
             interaction_type=interaction_type,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            metadata=metadata
         ) 

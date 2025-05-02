@@ -25,12 +25,12 @@ class PhishingEmailRepository:
         return [PhishingEmailRepository._model_to_entity(email) for email in emails]
 
     @staticmethod
-    def create(recipient_email: str, campaign_id: int, template_id: int) -> PhishingEmail:
+    def create(recipient_email: str, campaign_id: int, template_id: int, status: str = "pending") -> PhishingEmail:
         phishing_email_model = PhishingEmailModel(
             recipient_email=recipient_email,
             campaign_id=campaign_id,
             template_id=template_id,
-            status="pending"
+            status=status
         )
         db.session.add(phishing_email_model)
         db.session.commit()

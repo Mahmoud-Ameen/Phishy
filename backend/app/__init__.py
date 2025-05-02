@@ -13,7 +13,7 @@ def create_app(config_class=Config):
 
     app.url_map.strict_slashes = False
 
-    CORS(app)
+    CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True)
 
     # Initialize extensions
     db.init_app(app)
@@ -21,14 +21,12 @@ def create_app(config_class=Config):
     register_error_handlers(app)
 
     # Register user blueprints
-    from app.company.users.routes import users_bp
+    from app.identity.routes import users_bp, auth_bp
     app.register_blueprint(users_bp)
-    # Register auth blueprint
-    from app.company.auth.routes import auth_bp
     app.register_blueprint(auth_bp)
 
     # Register employees and departments blueprints
-    from app.company.employees.routes import employees_bp, departments_bp
+    from app.organization.routes import employees_bp, departments_bp
     app.register_blueprint(employees_bp)
     app.register_blueprint(departments_bp)
 
@@ -53,12 +51,16 @@ def create_app(config_class=Config):
     app.register_blueprint(phishing_bp)
 
     # Register campaigns blueprints
-    from app.company.campaigns.routes import campaigns_bp
+    from app.campaigns.routes import campaigns_bp
     app.register_blueprint(campaigns_bp)
 
     # Register tracking blueprints
-    from app.phishing.phishing.routes import tracking_bp
+    from app.phishing.tracking.routes import tracking_bp
     app.register_blueprint(tracking_bp)
+
+    @app.route('/')
+    def index():
+        return "Hello, World!"
 
     with app.app_context():
         db.create_all()

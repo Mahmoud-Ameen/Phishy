@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { Campaign, campaignService } from "@/services/campaign.service";
 import { Scenario, scenarioService } from "@/services/scenario.service";
 import { employeeService } from "@/services/employee.service";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 
 interface Employee {
 	email: string;

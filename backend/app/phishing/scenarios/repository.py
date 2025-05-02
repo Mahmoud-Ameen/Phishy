@@ -58,6 +58,13 @@ class TemplateRepository:
             raise TemplateDoesntExist(f"Template with id {template_id} not found")
 
     @staticmethod
+    def get_template_by_scenario_id(scenario_id: int) -> PhishingTemplate:
+        template = TemplateModel.query.filter_by(scenario_id=scenario_id).first()
+        if not template:
+            raise TemplateDoesntExist(f"Template for scenario with id {scenario_id} not found")
+        return TemplateRepository.model_to_entity(template)
+
+    @staticmethod
     def update_template(template_id: int, subject: str, content: str) -> PhishingTemplate:
     
         template = TemplateModel.query.get(template_id)
