@@ -45,9 +45,11 @@ class ResourceRepository:
         if not domain:
             raise DomainDoesntExist(f"Domain with name {domain_name} not found")
         
-        # Remove leading slash if present
+        # Remove leading/trailing slashes if present
         if endpoint.startswith('/'):
             endpoint = endpoint[1:]
+        if endpoint.endswith('/'):
+            endpoint = endpoint[:-1]
         
         # Check if resource with same domain and endpoint already exists
         existing_resource = ResourceRepository.get_resource_by_domain_and_endpoint(domain_name, endpoint)
