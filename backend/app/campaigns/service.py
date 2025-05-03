@@ -1,8 +1,8 @@
 from app.phishing.scenarios.service import ScenarioService
-from app.core.exceptions import AppException
+from app.core.exceptions import OperationFailure
 from .entity import Campaign
 from .repository import CampaignRepository
-from app.phishing.mailer.mailer_service import PhishingEmailManager
+from app.phishing.phishing_emails.service import PhishingEmailService
 from app.phishing.phishing_emails.repository import PhishingEmailRepository
 from flask import current_app
 
@@ -18,10 +18,9 @@ class CampaignService:
         Starts a new phishing campaign.
         1. Validates input and scenario.
         2. Creates the Campaign record in the database.
-        3. Creates all associated PhishingEmail records with PENDING status.
-        4. If successful, initiates background sending of emails (one thread per email).
-        5. Returns the created Campaign object immediately after DB records are created.
-        Handles rollback of Campaign creation if PhishingEmail creation fails.
+        3. Tells PhishingEmailService to create records and start background sending.
+        4. Handles rollback of Campaign creation if email processing initiation fails.
+        5. Returns the created Campaign object immediately if steps 2 & 3 succeed.
 
         Args:
             campaign_name (str): Name of the campaign
@@ -34,7 +33,9 @@ class CampaignService:
 
         Raises:
             ValueError: If validation fails (e.g., invalid scenario, no emails).
-            Exception: If database operations fail.
+            TemplateDoesntExist: If template is not found for scenario_id.
+            OperationFailure: If email processing initiation fails.
+            AppException: For other unexpected database errors during campaign creation.
         """
 
         # Validate recipient emails list
@@ -45,11 +46,11 @@ class CampaignService:
         try:
             template = ScenarioService.get_template_for_scenario(scenario_id)
         except Exception as e:
-            raise ValueError(f"Invalid scenario_id {scenario_id}: {str(e)}")
+            raise ValueError(f"Invalid scenario_id {scenario_id} or template issue: {str(e)}")
 
-        # 1. Create campaign record
-        campaign = None # Initialize campaign to None
+        campaign = None 
         try:
+            # Step 1: Create campaign record
             campaign = CampaignRepository.create_campaign(
                 name=campaign_name,
                 admin_email=admin_email,
@@ -57,50 +58,36 @@ class CampaignService:
             )
             print(f"Created Campaign record with ID: {campaign.id}")
 
-            # 2. Create pending PhishingEmail records using PhishingEmailManager
-            creation_result = PhishingEmailManager.create_pending_emails(
+            # Step 2: Initiate email record creation and background dispatch
+            flask_app = current_app._get_current_object() # Get app context for background tasks
+            
+            # This call will raise OperationFailure if email record creation fails
+            PhishingEmailService.process_campaign_emails(
                 campaign_id=campaign.id,
                 recipient_emails=emails,
-                template_id=template.id
+                template_id=template.id,
+                app=flask_app
             )
-
-            created_email_ids = creation_result["created_ids"]
-            failed_email_creations = creation_result["failed_emails"]
-
-            print(f"Attempted to create PhishingEmail records for campaign {campaign.id}. Success IDs: {len(created_email_ids)}, Failures: {len(failed_email_creations)}.")
-            if failed_email_creations:
-                print(f"Failed email addresses: {', '.join(failed_email_creations)}")
-
-            # 3. Check if ANY emails were successfully created. If not, abort and clean up.
-            if not created_email_ids:
-                print(f"No PhishingEmail records were successfully created for campaign {campaign.id}. Rolling back campaign creation.")
-                # Attempt to delete the campaign record created earlier
-                CampaignRepository.delete_campaign(campaign.id)
-                raise ValueError(f"Failed to create any PhishingEmail records for the provided emails.")
-
-            # 4. If we reach here, at least some emails were created. Initiate background sending.
-            flask_app = current_app._get_current_object() # Get app context for background tasks
-            PhishingEmailManager.start_background_sending(campaign.id, created_email_ids, flask_app)
-            print(f"Successfully created campaign {campaign.id} and initiated background email sending.")
-
-            # 5. Return the created campaign object
+            
+            print(f"Successfully initiated email processing for campaign {campaign.id}.")
+            # If we reach here, both campaign and email processing initiation were successful
             return campaign
 
-        except Exception as e:
-            print(f"Error during campaign start process: {e}")
+        except (OperationFailure, Exception) as e: # Catch email service failure or DB error
+            print(f"Error during campaign start process for campaign '{campaign_name}': {e}")
             # If campaign object was created before the error, try to clean it up
             if campaign and campaign.id:
                 print(f"Attempting to clean up campaign {campaign.id} due to error.")
                 try:
-                     # Note: Depending on where the error occurred, email records might exist.
-                     # We might need a more robust cleanup (e.g., delete associated emails too) or rely on background jobs failing gracefully.
-                     # For now, just delete the campaign record itself.
                     CampaignRepository.delete_campaign(campaign.id)
                     print(f"Cleaned up campaign {campaign.id}.")
                 except Exception as cleanup_error:
-                    print(f"Error during campaign cleanup for {campaign.id}: {cleanup_error}")
+                    # Log critical error if cleanup fails
+                    print(f"CRITICAL: Error during campaign cleanup for {campaign.id}: {cleanup_error}")
+            
             # Re-raise the original exception to signal failure
-            raise e
+            else: 
+                 raise Exception(f"Failed to create campaign or process emails: {e}") 
 
     @staticmethod
     def get_campaign(campaign_id: int) -> dict:

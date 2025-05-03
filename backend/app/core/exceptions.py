@@ -62,4 +62,9 @@ class DomainDoesntExist(AppException):
     pass
 
 
+class OperationFailure(AppException):
+    """ Indicates a general operation failure that might require rollback """
+    pass
+
+
 # endregion
