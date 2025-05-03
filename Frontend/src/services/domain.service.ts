@@ -7,13 +7,13 @@ export interface Domain {
 }
 
 interface DomainsResponse {
-    data: Domain[];
+    data: {domains: Domain[]};
     message: string;
     status: string;
 }
 
 interface CreateDomainResponse {
-    data: Domain;
+    data: {domain: Domain};
     message: string;
     status: string;
 }
@@ -23,11 +23,10 @@ const domainService = {
         try {
             const response = await api.get<DomainsResponse>(API_ENDPOINTS.domains);
             // Check if response.data exists and has a data property which is an array
-            if (response.data && Array.isArray(response.data.data)) {
-                return response.data.data;
+            if (response.data && Array.isArray(response.data.data.domains)) {
+                return response.data.data.domains;
             } else {
                 console.error('Invalid response structure for getDomains:', response.data);
-                // Return empty array or throw error based on how you want to handle this
                 return []; 
             }
         } catch (error) {
@@ -38,18 +37,21 @@ const domainService = {
 
     createDomain: async (domainName: string): Promise<Domain> => {
         try {
-            const response = await api.post<CreateDomainResponse>(API_ENDPOINTS.domains, { domain_name: domainName });
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+            const response = await api.post<CreateDomainResponse>(API_ENDPOINTS.domains, { domain_name: domainName }, { headers });
             // Check if response.data exists and has a data property
             if (response.data && response.data.data) {
-                return response.data.data;
+                return response.data.data.domain;
             } else {
                  console.error('Invalid response structure for createDomain:', response.data);
-                 // Throw an error as creation implies a specific return object expected
                  throw new Error('Failed to create domain due to invalid server response.');
             }
         } catch (error) {
             console.error('Failed to create domain:', error);
-            throw error; // Re-throw the error
+            throw error; 
         }
     },
 };
