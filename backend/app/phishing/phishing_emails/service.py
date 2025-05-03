@@ -64,9 +64,6 @@ class PhishingEmailService:
         Raises OperationFailure on first database error.
         """
         created_ids = []
-        tracking_url = current_app.config.get('TRACKING_URL', '#') 
-        if tracking_url == '#':
-            print(f"[WARN] TRACKING_URL not configured in app config. Tracking pixels may not work.")
             
         base_template_content = template.content
         base_subject = template.subject
@@ -77,11 +74,12 @@ class PhishingEmailService:
                 tracking_uuid = str(uuid.uuid4())
                 # Directly use the generated UUID as the tracking key
                 tracking_key = tracking_uuid 
-                tracking_pixel_url = f"{tracking_url}/{tracking_key}.png"
+                # Use TrackingService to generate the URL
+                tracking_pixel_url = TrackingService.generate_tracking_pixel_url(tracking_key)
                 
                 # Parse content
                 final_content = base_template_content
-                final_content += f'<img src="{tracking_pixel_url}" alt="" width="1" height="1" style="display:none;visibility:hidden;" />'
+                final_content += f'<img src="{tracking_pixel_url}" alt="" width="0" height="0" style="display:none;visibility:hidden;" />'
                 final_content = final_content.replace("{{tracking_key}}", tracking_key) 
                 final_subject = base_subject # Assume no placeholders in subject for now
 
