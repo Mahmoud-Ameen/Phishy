@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from .models import PhishingEmailModel
 from .entity import PhishingEmail
 from ... import db
@@ -6,8 +7,15 @@ from ... import db
 
 class PhishingEmailRepository:
     @staticmethod
-    def get_by_id(id: int) -> PhishingEmail:
-        return PhishingEmailRepository._model_to_entity(PhishingEmailModel.query.get(id))
+    def get_by_id(id: int) -> PhishingEmail | None:
+        model = PhishingEmailModel.query.get(id)
+        return PhishingEmailRepository._model_to_entity(model) if model else None
+
+    @staticmethod
+    def get_by_tracking_uuid(tracking_uuid: str) -> PhishingEmail | None:
+        """Finds a PhishingEmail record by its tracking UUID."""
+        model = PhishingEmailModel.query.filter_by(tracking_uuid=tracking_uuid).first()
+        return PhishingEmailRepository._model_to_entity(model) if model else None
 
     @staticmethod
     def get_by_recipient_email(recipient_email: str) -> list[PhishingEmail]:
@@ -25,22 +33,35 @@ class PhishingEmailRepository:
         return [PhishingEmailRepository._model_to_entity(email) for email in emails]
 
     @staticmethod
-    def create(recipient_email: str, campaign_id: int, template_id: int, status: str = "pending") -> PhishingEmail:
+    def create(recipient_email: str, 
+               campaign_id: int, 
+               template_id: int, 
+               tracking_uuid: str,
+               final_subject: str, 
+               final_content: str, 
+               status: str = "pending") -> PhishingEmail:
+        """Creates a new PhishingEmail record including tracking UUID and pre-parsed content."""
         phishing_email_model = PhishingEmailModel(
             recipient_email=recipient_email,
             campaign_id=campaign_id,
             template_id=template_id,
+            tracking_uuid=tracking_uuid,
+            final_subject=final_subject,
+            final_content=final_content,
             status=status
         )
         db.session.add(phishing_email_model)
         db.session.commit()
+        db.session.refresh(phishing_email_model)
         return PhishingEmailRepository._model_to_entity(phishing_email_model)
 
     @staticmethod
-    def update_status(id: int, status: str, error_message: str | None = None) -> PhishingEmail:
+    def update_status(id: int, status: str, error_message: str | None = None) -> PhishingEmail | None:
+        """Updates the status and optionally error message of an email."""
         email = PhishingEmailModel.query.get(id)
         if not email:
-            raise ValueError(f"Phishing email with id {id} not found")
+            print(f"Warning: Phishing email with id {id} not found during status update.")
+            return None
         
         email.status = status
         email.error_message = error_message
@@ -72,7 +93,11 @@ class PhishingEmailRepository:
         db.session.commit()
 
     @staticmethod
-    def _model_to_entity(phishing_email_model: PhishingEmailModel) -> PhishingEmail:
+    def _model_to_entity(phishing_email_model: PhishingEmailModel) -> PhishingEmail | None:
+        """Converts the SQLAlchemy model to a Pydantic entity."""
+        if not phishing_email_model:
+            return None
+            
         return PhishingEmail(
             id=phishing_email_model.id,
             recipient_email=phishing_email_model.recipient_email,

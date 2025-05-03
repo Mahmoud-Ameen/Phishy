@@ -1,5 +1,6 @@
 from flask import current_app
 import threading
+import uuid
 
 # App imports
 from app.phishing.phishing_emails.repository import PhishingEmailRepository
@@ -11,177 +12,163 @@ from app.core.exceptions import OperationFailure
 
 
 class PhishingEmailService:
+    """Manages the creation and dispatching of phishing emails for campaigns."""
 
     @staticmethod
     def process_campaign_emails(campaign_id: int, recipient_emails: list[str], template_id: int, app):
         """
-        Creates PhishingEmail records and initiates background sending for them.
-        Aims for atomicity in record creation - if any record fails, raises an exception.
+        Creates PhishingEmail records with pre-parsed content and initiates background sending.
 
-        Args:
-            campaign_id: ID of the campaign
-            recipient_emails: List of recipient email addresses
-            template_id: ID of the email template to use
-            app: Flask app context for background tasks
-
-        Returns:
-            List[int]: List of created PhishingEmail IDs if successful.
-
-        Raises:
-            OperationFailure: If any email record creation fails.
-            Exception: For other unexpected errors.
+        Raises OperationFailure if any record creation fails, 
+        allowing the caller (CampaignService) to handle rollback.
         """
-        print(f"Processing emails for campaign {campaign_id}. Count: {len(recipient_emails)}")
+        service_name = PhishingEmailService.__name__
+        print(f"[{service_name}] Processing {len(recipient_emails)} emails for campaign {campaign_id}...")
         try:
-            # Step 1: Create all email records (atomically within this service's scope)
-            created_ids = PhishingEmailService._create_email_records(campaign_id, recipient_emails, template_id)
-            print(f"Successfully created {len(created_ids)} PhishingEmail records for campaign {campaign_id}.")
+            # Fetch template once before the loop
+            template = TemplateRepository.get_template_by_id(template_id)
 
-            # Step 2: If creation successful, dispatch emails in the background
+            # Step 1: Create email records with pre-parsed content 
+            # Needs app context for TrackingService URL config
+            with app.app_context(): 
+                created_ids = PhishingEmailService._create_email_records(
+                    campaign_id, 
+                    recipient_emails, 
+                    template
+                )
+            print(f"[{service_name}] Successfully created {len(created_ids)} PhishingEmail records for campaign {campaign_id}.")
+
+            # Step 2: Dispatch background sending tasks
             if created_ids:
+                # Pass app context needed by the worker for DB access
                 PhishingEmailService._dispatch_emails_in_background(campaign_id, created_ids, app)
             else:
-                print(f"No email records were created (or needed) for campaign {campaign_id}. Nothing to dispatch.")
-                # Not necessarily an error, could be an empty recipient list handled earlier
+                print(f"[{service_name}] No email records created for campaign {campaign_id}. Nothing to dispatch.")
 
             return created_ids
 
         except OperationFailure as e: 
-            print(f"Email record creation failed for campaign {campaign_id}: {e}. Aborting processing.")
-            raise e # Re-raise the original exception to signal failure
+            # Handle known failures (template not found, record creation failed)
+            print(f"[{service_name}] Email processing failed for campaign {campaign_id}: {e}. Aborting.")
+            raise e # Re-raise for CampaignService to handle rollback
         except Exception as e:
-            print(f"Unexpected error during email processing for campaign {campaign_id}: {e}")
-            # Wrap unexpected errors
-            raise OperationFailure(f"Internal error processing campaign emails: {e}")
-
+            # Handle unexpected errors during the process
+            print(f"[{service_name}] Unexpected error processing emails for campaign {campaign_id}: {e}")
+            raise OperationFailure(f"Internal error during email processing: {e}") # Wrap unexpected errors
 
     @staticmethod
-    def _create_email_records(campaign_id: int, recipient_emails: list[str], template_id: int) -> list[int]:
+    def _create_email_records(campaign_id: int, recipient_emails: list[str], template) -> list[int]:
         """
-        Internal method to create PhishingEmail records. Raises OperationFailure on first error.
-        
-        Returns:
-            List[int]: List of created PhishingEmail IDs.
-        Raises:
-            OperationFailure: If any record creation fails.
+        Internal: Creates PhishingEmail records with pre-parsed content & tracking UUID.
+        Requires Flask app context for config access.
+        Raises OperationFailure on first database error.
         """
         created_ids = []
-        # It's generally better to handle transactionality at a higher level or DB level.
-        # For now, we raise on first failure as requested by the prompt's rollback requirement.
+        tracking_url = current_app.config.get('TRACKING_URL', '#') 
+        if tracking_url == '#':
+            print(f"[WARN] TRACKING_URL not configured in app config. Tracking pixels may not work.")
+            
+        base_template_content = template.content
+        base_subject = template.subject
+
         for email_address in recipient_emails:
             try:
-                # TODO: Convert to use enum
+                # --- Generate UUID and Parse Content --- 
+                tracking_uuid = str(uuid.uuid4())
+                # Directly use the generated UUID as the tracking key
+                tracking_key = tracking_uuid 
+                tracking_pixel_url = f"{tracking_url}/{tracking_key}.png"
+                
+                # Parse content
+                final_content = base_template_content
+                final_content += f'<img src="{tracking_pixel_url}" alt="" width="1" height="1" style="display:none;visibility:hidden;" />'
+                final_content = final_content.replace("{{tracking_key}}", tracking_key) 
+                final_subject = base_subject # Assume no placeholders in subject for now
+
+                # --- Create DB Record --- 
                 email_record = PhishingEmailRepository.create(
                     recipient_email=email_address,
                     campaign_id=campaign_id,
-                    template_id=template_id,
+                    template_id=template.id,
+                    tracking_uuid=tracking_uuid, # Pass the generated UUID
+                    final_subject=final_subject, 
+                    final_content=final_content, 
                     status="pending" 
                 )
                 created_ids.append(email_record.id)
+
             except Exception as e:
-                # On first failure, log, (optionally clean up previously created IDs if needed/possible),
-                # and raise a specific exception to signal failure to the caller.
-                print(f"Failed to create PhishingEmail record for {email_address} in campaign {campaign_id}: {e}. Triggering rollback.")
-                # Optional: Add cleanup logic here if necessary
-                # for created_id in created_ids:
-                #    try: PhishingEmailRepository.delete(created_id) # Requires a delete method
-                #    except: pass # Best effort cleanup
+                print(f"Failed to create PhishingEmail record for {email_address} (Campaign {campaign_id}): {e}. Triggering rollback.")
                 raise OperationFailure(f"Failed to create record for {email_address}: {e}")
-
         return created_ids
-
 
     @staticmethod
     def _dispatch_emails_in_background(campaign_id: int, phishing_email_ids: list[int], app):
         """
-        Internal method to start background threads for sending emails.
+        Internal: Starts background threads for sending emails.
         """
-        print(f"Dispatching background sending for campaign {campaign_id} for {len(phishing_email_ids)} emails.")
+        print(f"Dispatching background sending for campaign {campaign_id} ({len(phishing_email_ids)} emails)...")
         threads = []
         for email_id in phishing_email_ids:
-            # Pass the service method itself
+            # Pass the specific worker function and necessary context
             thread = threading.Thread(target=PhishingEmailService._send_single_email_worker, args=(email_id, app.app_context()))
-            thread.daemon = True # Allow main thread to exit even if workers are running
+            thread.daemon = True # Allow main thread to exit
             thread.start()
             threads.append(thread)
-            print(f"Started worker thread for PhishingEmail ID: {email_id}")
-        # Note: We don't necessarily need to join these threads here.
-        # They update the DB status independently.
+        # NOTE: Workers update DB status independently. No need to join threads here.
 
     @staticmethod
     def _send_single_email_worker(phishing_email_id: int, app_context):
         """
-        Worker function executed in a separate thread to send a single phishing email.
-        Fetches details, sends email, and updates status in DB.
-
-        Args:
-            phishing_email_id: ID of the PhishingEmail record to process
-            app_context: Flask application context
+        Internal: Worker function executed in a thread to send one phishing email.
+        Uses pre-parsed content stored in the database record.
         """
-        with app_context:
-            email_record: PhishingEmail | None = None
-            # Optional: add a small delay if needed, e.g., sleep(1)
-            # sleep(5) # Consider if this fixed delay is necessary
+        log_prefix = f"[Worker-{phishing_email_id}]"
+        email_record_model: PhishingEmail | None = None # Use Model for direct field access
+        
+        with app_context: # Needed for DB access within the thread
             try:
-                # Get the specific email record
-                email_record = PhishingEmailRepository.get_by_id(phishing_email_id)
-                if not email_record:
-                    print(f"[Worker-{phishing_email_id}] Error: PhishingEmail record not found.")
+                # --- Step 1: Fetch Record & Validate --- 
+                # Fetch the full model to access final_subject/final_content
+                # Use PhishingEmailModel directly with SQLAlchemy session from app_context
+                email_record_model = PhishingEmail.query.get(phishing_email_id) 
+                
+                if not email_record_model:
+                    print(f"{log_prefix} Error: PhishingEmail record not found.")
                     return
-                # TODO: Update to use enum
-                if email_record.status != "pending":
-                    print(f"[Worker-{phishing_email_id}] Info: Email is not PENDING (Status: {email_record.status}). Skipping.")
+                
+                email_address_for_log = email_record_model.recipient_email
+
+                # NOTE: Status should eventually use an Enum
+                if email_record_model.status != "pending": # StatusEnum.PENDING
+                    print(f"{log_prefix} Info: Email for {email_address_for_log} is not PENDING (Status: {email_record_model.status}). Skipping.")
                     return
 
-                # Get template
-                template = TemplateRepository.get_template_by_id(email_record.template_id)
-                if not template:
-                    # Log error and update status to failed
-                    error_msg = f"Template with ID {email_record.template_id} not found for email {phishing_email_id}"
-                    print(f"[Worker-{phishing_email_id}] Error: {error_msg}")
-                    PhishingEmailRepository.update_status(phishing_email_id, "failed", error_msg)
-                    print(f"[Worker-{phishing_email_id}] Updated status to FAILED due to missing template.")
-                    return # Stop processing this email
+                # --- Step 2: Attempt Sending (using pre-parsed content) --- 
+                print(f"{log_prefix} Attempting to send email to {email_address_for_log}...")
+                # Use the pre-parsed fields from the fetched model
+                SMTPMailService.send(
+                    email_address_for_log, 
+                    email_record_model.final_subject, 
+                    email_record_model.final_content  
+                )
+                
+                # Update status to sent upon successful send initiation
+                # NOTE: Status should eventually use an Enum
+                PhishingEmailRepository.update_status(email_record_model.id, "sent") # StatusEnum.SENT
+                print(f"{log_prefix} Successfully sent email to {email_address_for_log} and updated status to SENT.")
+                            
+            except Exception as setup_error: # Catch errors from Step 1 (fetching record)
+                error_details = str(setup_error)
 
-                # Generate tracking key
-                tracking_key = TrackingService.generate_tracking_key(email_record.id, email_record.recipient_email)
-
-                # Create tracking pixel URL
-                # Ensure TRACKING_URL is configured correctly in Flask app config
-                tracking_url = current_app.config.get('TRACKING_URL') 
-                if not tracking_url:
-                     print(f"[Worker-{phishing_email_id}] Warning: TRACKING_URL not configured in Flask app. Tracking pixel might not work.")
-                     tracking_pixel_url = "#" # Default to a non-functional URL
-                else:
-                    tracking_pixel_url = f"{tracking_url}/{tracking_key}.png"
-
-
-                # Populate template content
-                template_content = template.content
-                # Append tracking pixel invisibly
-                template_content += f'<img src="{tracking_pixel_url}" alt="" width="1" height="1" style="display:none;visibility:hidden;" />'
-                # Replace tracking key placeholder (assuming {{tracking_key}} exists in template)
-                # Consider making the placeholder configurable
-                template_content = template_content.replace("{{tracking_key}}", tracking_key) 
-
-                # Send email
-                print(f"[Worker-{phishing_email_id}] Sending email to {email_record.recipient_email}...")
-                SMTPMailService.send(email_record.recipient_email, template.subject, template_content)
-
-                # Update status to sent
-                # TODO: Update to use enum
-                PhishingEmailRepository.update_status(email_record.id, "sent")
-                print(f"[Worker-{phishing_email_id}] Successfully sent email to {email_record.recipient_email} and updated status to SENT.")
-
-            except Exception as e:
-                error_details = str(e)
-                print(f"[Worker-{phishing_email_id}] Error sending email to {email_record.recipient_email if email_record else 'N/A'}: {error_details}")
-                # Update status to failed if we have an email record ID
+                log_email = email_record_model.recipient_email if email_record_model else "N/A"
+                print(f"{log_prefix} Setup error processing email for {log_email}: {error_details}")
+                # Update status to failed if we have an email record ID (should always exist if query.get didn't fail)
                 if phishing_email_id:
                     try:
-                        # TODO: Update to use enum
-                        PhishingEmailRepository.update_status(phishing_email_id, "failed", error_details)
-                        print(f"[Worker-{phishing_email_id}] Updated status to FAILED.")
+                        # NOTE: Status should eventually use an Enum
+                        PhishingEmailRepository.update_status(phishing_email_id, "failed", f"Setup Error: {error_details}") # StatusEnum.FAILED
+                        print(f"{log_prefix} Updated status to FAILED due to setup error.")
                     except Exception as update_err:
-                         print(f"[Worker-{phishing_email_id}] Critical Error: Failed to update status to FAILED after send error: {update_err}")
-            # No explicit return needed from thread worker 
+                        # Log critical failure if status update fails
+                        print(f"{log_prefix} CRITICAL: Failed to update status to FAILED after setup error: {update_err}")

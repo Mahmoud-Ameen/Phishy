@@ -82,13 +82,8 @@ class CampaignService:
                     CampaignRepository.delete_campaign(campaign.id)
                     print(f"Cleaned up campaign {campaign.id}.")
                 except Exception as cleanup_error:
-                    # Log critical error if cleanup fails
                     print(f"CRITICAL: Error during campaign cleanup for {campaign.id}: {cleanup_error}")
             
-            # Re-raise the original exception to signal failure
-            else: 
-                 raise Exception(f"Failed to create campaign or process emails: {e}") 
-
     @staticmethod
     def get_campaign(campaign_id: int) -> dict:
         """

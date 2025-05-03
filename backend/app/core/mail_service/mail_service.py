@@ -36,9 +36,16 @@ class SMTPMailService(MailService):
 
         msg.attach(MIMEText(body, content_type))
 
+        recipients_list = [to]
+
         with smtplib.SMTP(SMTPMailService.smtp_server, SMTPMailService.smtp_port) as server:
             server.starttls()
             server.login(SMTPMailService.username, SMTPMailService.password)
-            server.sendmail(SMTPMailService.username, to, msg.as_string())
+            # Attempt to send the email. sendmail will raise exceptions for
+            # non-recipient-refusal errors (e.g., auth, connection, sender refused).
+            # Recipient refusals for a single recipient won't raise an error here
+            # but would require bounce handling to detect.
+            server.sendmail(SMTPMailService.username, recipients_list, msg.as_string())
+            print(f"Successfully initiated send to {to} via SMTP server")
 
 
