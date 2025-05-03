@@ -5,6 +5,8 @@ from flask_cors import CORS
 from app.core.middlewares import register_error_handlers
 from .extensions import db, jwt
 from .config import Config
+# Import the hook function
+from app.phishing.hooks import serve_phishing_resource 
 
 
 def create_app(config_class=Config):
@@ -19,6 +21,9 @@ def create_app(config_class=Config):
     db.init_app(app)
     jwt.init_app(app)
     register_error_handlers(app)
+
+    # Register the before_request hook
+    app.before_request(serve_phishing_resource)
 
     # Register user blueprints
     from app.identity.routes import users_bp, auth_bp
@@ -46,10 +51,6 @@ def create_app(config_class=Config):
     from app.phishing.resources.routes import resources_bp
     app.register_blueprint(resources_bp)
     
-    # Register phishing blueprints
-    from app.phishing.resources.routes import phishing_bp
-    app.register_blueprint(phishing_bp)
-
     # Register campaigns blueprints
     from app.campaigns.routes import campaigns_bp
     app.register_blueprint(campaigns_bp)

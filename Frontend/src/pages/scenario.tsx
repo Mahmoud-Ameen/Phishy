@@ -238,14 +238,14 @@ export default function ScenarioPage() {
 									<div className="flex gap-2">
 										<Button
 											color="primary"
-											onClick={handleScenarioUpdate}
+											onPress={handleScenarioUpdate}
 											className="flex items-center gap-2"
 										>
 											<span>Save Changes</span>
 										</Button>
 										<Button
 											color="secondary"
-											onClick={() => setIsEditing(false)}
+											onPress={() => setIsEditing(false)}
 											className="flex items-center gap-2"
 										>
 											<span>Cancel</span>
@@ -254,7 +254,7 @@ export default function ScenarioPage() {
 								) : (
 									<Button
 										color="danger"
-										onClick={handleDelete}
+										onPress={handleDelete}
 										className="flex items-center gap-2"
 									>
 										<TrashIcon className="w-5 h-5" />
@@ -441,7 +441,7 @@ export default function ScenarioPage() {
 								</div>
 								<Button 
 									color="primary" 
-									onClick={() => setShowAddResourceForm(!showAddResourceForm)}
+									onPress={() => setShowAddResourceForm(!showAddResourceForm)}
 									className="flex items-center gap-2"
 									disabled={isAddingResource}
 								>
