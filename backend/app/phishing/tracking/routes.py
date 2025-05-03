@@ -6,30 +6,6 @@ import logging
 tracking_bp = Blueprint("tracking", __name__, url_prefix="/api/tracking")
 logger = logging.getLogger(__name__)
 
-# Track link clicks
-@tracking_bp.route("/click/<tracking_key>")
-def track_click(tracking_key):
-    """
-    Track link clicks and redirect to the appropriate landing page
-    """
-    try:
-        # Get client info
-        ip_address = request.remote_addr
-        user_agent = request.headers.get('User-Agent')
-        
-        # Record the click
-        result = TrackingService.record_click(
-            tracking_key=tracking_key,
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-        
-        # Here you would typically redirect to the landing page based on the scenario
-        return "Link clicked. This would typically redirect to a phishing landing page."
-    except Exception as e:
-        logger.error(f"Error tracking link click: {str(e)}")
-        return "Error processing your request", 500
-
 # Track email opens via tracking pixel
 @tracking_bp.route("/open/<tracking_key>")
 def track_open(tracking_key: str):
@@ -44,8 +20,9 @@ def track_open(tracking_key: str):
         user_agent = request.headers.get('User-Agent')
 
         # Try to record the interaction if the tracking key is valid
-        TrackingService.record_open(
+        TrackingService.track_interaction(
             tracking_key=tracking_key,
+            interaction_type="email_open",
             ip_address=ip_address,
             user_agent=user_agent
         )
