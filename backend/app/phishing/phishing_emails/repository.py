@@ -106,5 +106,8 @@ class PhishingEmailRepository:
             error_message=phishing_email_model.error_message,
             campaign_id=phishing_email_model.campaign_id,
             template_id=phishing_email_model.template_id,
-            created_at=phishing_email_model.created_at
+            created_at=phishing_email_model.created_at,
+            tracking_uuid=phishing_email_model.tracking_uuid,
+            final_subject=phishing_email_model.final_subject,
+            final_content=phishing_email_model.final_content
         )

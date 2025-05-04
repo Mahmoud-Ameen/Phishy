@@ -27,5 +27,8 @@ class PhishingEmailModel(db.Model):
             "error_message": self.error_message,
             "campaign_id": self.campaign_id,
             "template_id": self.template_id,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "tracking_uuid": self.tracking_uuid,
+            "final_subject": self.final_subject,
+            "final_content": self.final_content,
         }
