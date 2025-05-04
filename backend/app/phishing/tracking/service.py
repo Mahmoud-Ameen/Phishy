@@ -52,3 +52,12 @@ class TrackingService:
         Get all interactions for a tracking key (UUID)
         """
         return PhishingInteractionRepository.get_by_tracking_key(tracking_key)
+
+    @staticmethod
+    def get_interactions() -> List[PhishingInteraction]:
+        """
+        Get all interactions
+        """
+        return PhishingInteractionRepository.get_all()
+
+    

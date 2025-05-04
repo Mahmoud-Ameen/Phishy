@@ -1,4 +1,6 @@
-from flask import Blueprint, request, send_file, current_app
+from flask import Blueprint, request, send_file
+
+from app.core.response import ApiResponse
 from .service import TrackingService
 import os
 import logging
@@ -58,4 +60,28 @@ def track_form_submission(tracking_key):
         return "Form submitted. Thank you."
     except Exception as e:
         logger.error(f"Error tracking form submission: {str(e)}")
-        return "Error processing your request", 500 
+        return "Error processing your request", 500
+
+# Get interactions by tracking key
+@tracking_bp.route("/interactions/<tracking_key>", methods=["GET"])
+def get_interactions(tracking_key: str):
+    """
+    Get all interactions recorded for a specific tracking key (UUID).
+    """
+    try:
+        interactions = TrackingService.get_interactions_by_tracking_key(tracking_key)
+        interactions_data = [interaction.to_dict() for interaction in interactions] 
+        return ApiResponse.success(
+            {"interactions": interactions_data}
+        )
+    except Exception as e:
+        logger.error(f"Error getting interactions for key {tracking_key}: {str(e)}")
+        return ApiResponse.error("Failed to retrieve interactions", 500)
+
+@tracking_bp.route("/interactions")
+def get_all_interactions():
+    """
+    Get all interactions
+    """
+    return TrackingService.get_interactions()
+
