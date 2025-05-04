@@ -24,6 +24,17 @@ class PhishingInteractionRepository:
         interactions = PhishingInteractionModel.query.filter_by(tracking_key=tracking_key).order_by(PhishingInteractionModel.timestamp.asc()).all()
         return [PhishingInteractionRepository._model_to_entity(i) for i in interactions]
 
+
+    @staticmethod
+    def get_all() -> List[PhishingInteraction]:
+        interactions = PhishingInteractionModel.query.order_by(PhishingInteractionModel.timestamp.asc()).all()
+        return [PhishingInteractionRepository._model_to_entity(i) for i in interactions]
+
+    @staticmethod
+    def get_count_by_tracking_key(tracking_key: str) -> int:
+        count = PhishingInteractionModel.query.filter_by(tracking_key=tracking_key).count()
+        return count
+
     @staticmethod
     def _model_to_entity(model: PhishingInteractionModel) -> PhishingInteraction:
         return PhishingInteraction(

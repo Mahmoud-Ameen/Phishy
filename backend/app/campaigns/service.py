@@ -4,6 +4,7 @@ from .entity import Campaign
 from .repository import CampaignRepository
 from app.phishing.phishing_emails.service import PhishingEmailService
 from app.phishing.phishing_emails.repository import PhishingEmailRepository
+from app.phishing.tracking.repository import PhishingInteractionRepository
 from flask import current_app
 
 
@@ -99,9 +100,21 @@ class CampaignService:
 
         # Get all emails for this campaign
         emails = PhishingEmailRepository.get_by_campaign_id(campaign_id)
-        emails_data = [email.to_dict() for email in emails]
+        
+        # Convert emails to dicts and add interaction counts
+        emails_data = []
+        for email in emails:
+            email_data = email.to_dict()
+            # Get interaction count using the tracking key (UUID)
+            if email.tracking_uuid:
+                interaction_count = PhishingInteractionRepository.get_count_by_tracking_key(email.tracking_uuid)
+                email_data['interaction_count'] = interaction_count
+            else:
+                email_data['interaction_count'] = 0
+            emails_data.append(email_data)
 
         # Calculate statistics
+        # TODO: Remove or update based on interactions table. 
         total_emails = len(emails)
         sent_emails = sum(1 for email in emails if email.status == "sent")
         failed_emails = sum(1 for email in emails if email.status == "failed")
