@@ -17,10 +17,17 @@ import {
     Progress,
     Spinner,
     Tooltip,
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+    useDisclosure,
 } from "@heroui/react";
 import { Campaign, CampaignStatus, PhishingEmail, campaignService } from "@/services/campaign.service";
 import { Scenario, scenarioService } from "@/services/scenario.service";
-import { ArrowLeftIcon, EnvelopeIcon, CheckCircleIcon, XCircleIcon, ClockIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { Interaction, trackingService } from "@/services/tracking.service";
+import { ArrowLeftIcon, EnvelopeIcon, CheckCircleIcon, XCircleIcon, ClockIcon, ExclamationCircleIcon, EyeIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-toastify";
 
 export default function CampaignDetailsPage() {
@@ -34,6 +41,12 @@ export default function CampaignDetailsPage() {
     const [status, setStatus] = useState<CampaignStatus | null>(null);
     const [phishingEmails, setPhishingEmails] = useState<PhishingEmail[]>([]);
     const [error, setError] = useState<string | null>(null);
+    
+    // State for interactions modal
+    const { isOpen: isInteractionModalOpen, onOpen: onInteractionModalOpen, onClose: onInteractionModalClose } = useDisclosure();
+    const [selectedEmailRecipient, setSelectedEmailRecipient] = useState<string | null>(null);
+    const [interactions, setInteractions] = useState<Interaction[]>([]);
+    const [isLoadingInteractions, setIsLoadingInteractions] = useState(false);
     
     useEffect(() => {
         if (campaignId) {
@@ -100,6 +113,27 @@ export default function CampaignDetailsPage() {
         if (percentage < 30) return "danger";
         if (percentage < 70) return "warning";
         return "success";
+    };
+    
+    // Function to fetch interactions and open modal
+    const fetchAndShowInteractions = async (email: PhishingEmail) => {
+        if (!email.tracking_uuid) {
+            toast.info("No tracking information available for this email.");
+            return;
+        }
+        setSelectedEmailRecipient(email.recipient_email);
+        setIsLoadingInteractions(true);
+        onInteractionModalOpen(); // Open modal immediately to show loading state
+        try {
+            const response = await trackingService.getInteractions(email.tracking_uuid);
+            setInteractions(response || []);
+        } catch (err) {
+            console.error("Error fetching interactions:", err);
+            toast.error("Failed to load interactions.");
+            setInteractions([]); // Clear interactions on error
+        } finally {
+            setIsLoadingInteractions(false);
+        }
     };
     
     if (loading) {
@@ -259,6 +293,7 @@ export default function CampaignDetailsPage() {
                                     <TableColumn>STATUS</TableColumn>
                                     <TableColumn>SENT TIME</TableColumn>
                                     <TableColumn>CREATED TIME</TableColumn>
+                                    <TableColumn>INTERACTIONS</TableColumn>
                                     <TableColumn>ERROR</TableColumn>
                                 </TableHeader>
                                 <TableBody>
@@ -271,6 +306,18 @@ export default function CampaignDetailsPage() {
                                                     {email.sent_at ? formatDate(email.sent_at) : "-"}
                                                 </TableCell>
                                                 <TableCell>{formatDate(email.created_at)}</TableCell>
+                                                <TableCell>
+                                                    <Button 
+                                                        size="sm"
+                                                        variant="flat" 
+                                                        color="primary"
+                                                        startContent={<EyeIcon className="h-4 w-4" />}
+                                                        onPress={() => fetchAndShowInteractions(email)}
+                                                        isDisabled={!email.tracking_uuid}
+                                                    >
+                                                        {email.interaction_count ?? 0}
+                                                    </Button>
+                                                </TableCell>
                                                 <TableCell>
                                                     {email.error_message ? (
                                                         <Tooltip content={email.error_message}>
@@ -295,6 +342,64 @@ export default function CampaignDetailsPage() {
                     </Card>
                 </div>
             </div>
+
+            {/* Interactions Modal */}
+            <Modal isOpen={isInteractionModalOpen} onClose={onInteractionModalClose} size="4xl">
+                <ModalContent>
+                    <ModalHeader className="flex flex-col gap-1">
+                        Interactions for {selectedEmailRecipient}
+                    </ModalHeader>
+                    <ModalBody>
+                        {isLoadingInteractions ? (
+                            <div className="flex flex-col justify-center items-center p-8 text-center"><Spinner label="Loading interactions..." /></div>
+                        ) : interactions.length > 0 ? (
+                            <div className="border border-default-200 rounded-lg">
+                                <Table aria-label="Interaction details" removeWrapper>
+                                    <TableHeader>
+                                        <TableColumn>TYPE</TableColumn>
+                                        <TableColumn>TIMESTAMP</TableColumn>
+                                        <TableColumn>IP ADDRESS</TableColumn>
+                                        <TableColumn>USER AGENT</TableColumn>
+                                        <TableColumn>DETAILS</TableColumn>
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-default-200">
+                                        {interactions.map((interaction) => (
+                                            <TableRow key={interaction.id}>
+                                                <TableCell>{interaction.interaction_type}</TableCell>
+                                                <TableCell>{formatDate(interaction.timestamp)}</TableCell>
+                                                <TableCell>{interaction.ip_address}</TableCell>
+                                                <TableCell>
+                                                    <Tooltip content={interaction.user_agent || 'N/A'} placement="top">
+                                                        <span className="truncate block max-w-xs">
+                                                            {interaction.user_agent || 'N/A'}
+                                                        </span>
+                                                    </Tooltip>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {interaction.interaction_metadata ? (
+                                                        <Tooltip content={interaction.interaction_metadata} placement="top">
+                                                            <Button size="sm" variant="bordered" color="default">
+                                                                View Data
+                                                            </Button>
+                                                        </Tooltip>
+                                                    ) : '-'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ) : (
+                            <p className="text-center text-default-500 p-8">No interactions recorded for this email.</p>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button color="danger" variant="light" onPress={onInteractionModalClose}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </DefaultLayout>
     );
 } 

@@ -18,6 +18,10 @@ export interface PhishingEmail {
     campaign_id: number;
     template_id: number;
     created_at: string;
+    tracking_uuid: string ;
+    interaction_count: number | null;
+    final_subject: string;
+    final_content: string;
 }
 
 export interface CampaignStatus {
